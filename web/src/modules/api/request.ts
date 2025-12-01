@@ -1,9 +1,16 @@
 import ky, { type KyResponse, type Options } from 'ky';
 
 import { Method } from '@/modules/api/model';
-import userManager from '@/modules/auth/config/user-manager';
+// ============================================================
+// MOCK AUTH MODE - OIDC imports commented out for mock mode
+// ============================================================
+// import userManager from '@/modules/auth/config/user-manager';
+// ============================================================
+// END MOCK AUTH MODE IMPORTS
+// ============================================================
 import { getStepUpAccess } from '@/modules/auth/methods/getStepUpAccess';
 import { StepUpAccess } from '@/modules/auth/model';
+import { isMockAuthEnabled, getMockUserId } from '@/modules/auth/mock-auth';
 
 export const request = async <T>(url: string, init?: Options): Promise<T> => {
 	const response = await requestWrapper<T>(url, init);
@@ -30,11 +37,28 @@ const requestWrapper = async <T>(url: string, init?: Options): Promise<KyRespons
 
 	const defaultHeaders: Record<string, string> = {};
 
-	const user = await userManager.getUser();
-	const accessToken = user?.access_token;
-	if (accessToken) {
-		defaultHeaders.Authorization = `Bearer ${accessToken}`;
+	// ============================================================
+	// MOCK AUTH MODE - Use mock user ID instead of OIDC token
+	// ============================================================
+	if (isMockAuthEnabled()) {
+		const mockUserId = getMockUserId();
+		if (mockUserId) {
+			defaultHeaders['X-Mock-User-Id'] = mockUserId.toString();
+		}
 	}
+	// ============================================================
+	// OIDC AUTH - Commented out for mock mode, uncomment to restore
+	// ============================================================
+	// else {
+	// 	const user = await userManager.getUser();
+	// 	const accessToken = user?.access_token;
+	// 	if (accessToken) {
+	// 		defaultHeaders.Authorization = `Bearer ${accessToken}`;
+	// 	}
+	// }
+	// ============================================================
+	// END AUTH MODE
+	// ============================================================
 
 	// if user has step up access, mark in request
 	if (stepUpAccess === StepUpAccess.LOGGED) {
