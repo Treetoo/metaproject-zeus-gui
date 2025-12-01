@@ -5,6 +5,9 @@ type Config = {
 
 	VITE_IDENTITY_ISSUER: string;
 	VITE_IDENTITY_CLIENT_ID: string;
+
+	// Mock auth mode - set to 'true' to enable mock authentication
+	VITE_MOCK_AUTH_ENABLED?: string;
 };
 
 export declare global {

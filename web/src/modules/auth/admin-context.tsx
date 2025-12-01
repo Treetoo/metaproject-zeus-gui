@@ -7,10 +7,17 @@ import {
 	useEffect,
 	useState
 } from 'react';
-import { useAuth } from 'react-oidc-context';
+// ============================================================
+// MOCK AUTH MODE - useAuth commented out for mock mode
+// ============================================================
+// import { useAuth } from 'react-oidc-context';
+// ============================================================
+// END MOCK AUTH MODE IMPORTS
+// ============================================================
 
 import { getCurrentRole } from '@/modules/auth/methods/getCurrentRole';
 import { ROLE_UPDATED_EVENT } from '@/modules/auth/methods/onSigninCallback';
+import { useMockAuth } from '@/modules/auth/mock-auth-context';
 
 import { Role } from '../user/role';
 
@@ -26,7 +33,14 @@ export const AdminContext = createContext<AdminContextType>({
 
 export const AdminContextProvider = ({ children }: { children: ReactElement }) => {
 	const [currentRole, setCurrentRole] = useState(getCurrentRole());
-	const { isAuthenticated } = useAuth();
+	// ============================================================
+	// MOCK AUTH MODE - Using mock auth instead of OIDC
+	// ============================================================
+	// const { isAuthenticated } = useAuth();
+	const { isAuthenticated } = useMockAuth();
+	// ============================================================
+	// END MOCK AUTH MODE
+	// ============================================================
 
 	// Re-sync role from localStorage when auth state changes
 	useEffect(() => {

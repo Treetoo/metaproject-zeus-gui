@@ -1,5 +1,11 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from 'react-oidc-context';
+// ============================================================
+// MOCK AUTH MODE - useAuth commented out for mock mode
+// ============================================================
+// import { useAuth } from 'react-oidc-context';
+// ============================================================
+// END MOCK AUTH MODE IMPORTS
+// ============================================================
 import React from 'react';
 import { Box, Flex } from '@mantine/core';
 
@@ -7,11 +13,19 @@ import Loading from '@/components/global/loading';
 import { getStepUpAccess } from '@/modules/auth/methods/getStepUpAccess';
 import { StepUpAccess } from '@/modules/auth/model';
 import { getCurrentRole } from '@/modules/auth/methods/getCurrentRole';
+import { useMockAuth } from '@/modules/auth/mock-auth-context';
 
 const AdminRouteGuard = () => {
 	const location = useLocation();
 	const role = getCurrentRole();
-	const { isAuthenticated, isLoading } = useAuth();
+	// ============================================================
+	// MOCK AUTH MODE - Using mock auth instead of OIDC
+	// ============================================================
+	// const { isAuthenticated, isLoading } = useAuth();
+	const { isAuthenticated, isLoading } = useMockAuth();
+	// ============================================================
+	// END MOCK AUTH MODE
+	// ============================================================
 	const stepUpAccess = getStepUpAccess();
 
 	if (isLoading) {
