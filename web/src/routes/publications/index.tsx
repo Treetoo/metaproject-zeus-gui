@@ -7,6 +7,7 @@ import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
 import { IconLibrary } from '@tabler/icons-react';
 import { HTTPError } from 'ky';
+import { searchByOrcid, type OrcidWorkDto } from '@/modules/publication/api/search-by-orcid';
 
 import PageBreadcrumbs from '@/components/global/page-breadcrumbs';
 import { PUBLICATION_PAGE_SIZES } from '@/modules/publication/constants';
@@ -16,8 +17,10 @@ import { createMyPublication } from '@/modules/publication/api/my-publications';
 import {
     manualPublicationSchema,
     searchByDoiSchema,
+    searchByOrcidSchema,
     type ManualPublicationSchema,
-    type SearchByDoiSchema
+    type SearchByDoiSchema,
+    type SearchByOrcidSchema,
 } from '@/modules/publication/form';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,11 +44,18 @@ const MyPublicationsPage = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isAddDoiModalOpen, setIsAddDoiModalOpen] = useState(false);
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+    const [isAddOrcidModalOpen, setIsAddOrcidModalOpen] = useState(false);
     const [publicationToAssign, setPublicationToAssign] = useState<Publication | null>(null);
+    const [isOrcidSearching, setIsOrcidSearching] = useState(false);
+    const [isOrcidSubmitting, setIsOrcidSubmitting] = useState(false);
+    const [orcidInput, setOrcidInput] = useState('');
+    const [orcidWorks, setOrcidWorks] = useState<OrcidWorkDto[]>([]);
     const addForm = useForm<ManualPublicationSchema>({ resolver: zodResolver(manualPublicationSchema) });
     const doiForm = useForm<SearchByDoiSchema>({ resolver: zodResolver(searchByDoiSchema), defaultValues: { doi: '' } });
+    const orcidForm = useForm<SearchByOrcidSchema>({ resolver: zodResolver(searchByOrcidSchema), defaultValues: { doi: '' } });
     const [isDoiSubmitting, setIsDoiSubmitting] = useState(false);
     const isHttpError = (value: unknown): value is HTTPError => value instanceof HTTPError;
+    const [selectedOrcidWorks, setSelectedOrcidWorks] = useState<OrcidWorkDto[]>([]);
 
     // Transform projects for Select dropdown
     const projectOptions = useMemo(() => {
@@ -63,7 +73,104 @@ const MyPublicationsPage = () => {
 
     const closeAddDoiModal = () => {
         setIsAddDoiModalOpen(false);
-        doiForm.reset({ doi: '' });
+        orcidForm.reset({ doi: '' });
+    };
+
+    const openAddOrcidModal = () => {
+        setIsAddOrcidModalOpen(true);
+        setOrcidInput('');
+        setOrcidWorks([]);
+        setSelectedOrcidWorks([]);
+    };
+
+    const closeAddOrcidModal = () => {
+        setIsAddOrcidModalOpen(false);
+    };
+
+    const handleSearchOrcid = async () => {
+        const trimmed = orcidInput.trim();
+        if (!trimmed) {
+            notifications.show({ message: 'Please enter an ORCID', color: 'yellow' });
+            return;
+        }
+
+        setIsOrcidSearching(true);
+        try {
+            const result = await searchByOrcid(trimmed);
+            setOrcidWorks(result.works || []);
+            if (!result.works || result.works.length === 0) {
+                notifications.show({ message: 'No publications found for this ORCID', color: 'blue' });
+            }
+        } catch (error) {
+            notifications.show({ message: 'Failed to search by ORCID', color: 'red' });
+        } finally {
+            setIsOrcidSearching(false);
+        }
+    };
+
+    const handleSubmitSelectedOrcid = async () => {
+        if (selectedOrcidWorks.length === 0) return;
+
+        const worksWithDoi = selectedOrcidWorks.filter(w => w.doi);
+        if (worksWithDoi.length === 0) {
+            notifications.show({ message: 'Selected publications have no DOI', color: 'yellow' });
+            return;
+        }
+
+        if (worksWithDoi.length < selectedOrcidWorks.length) {
+            notifications.show({
+                message: `${selectedOrcidWorks.length - worksWithDoi.length} publication(s) skipped (no DOI)`,
+                color: 'yellow'
+            });
+        }
+
+        setIsOrcidSubmitting(true);
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const work of worksWithDoi) {
+            try {
+                // Fetch full details by DOI to get journal information
+                const publication = await searchByDoi(work.doi);
+                if (publication) {
+                    await createMyPublication({
+                        ...publication,
+                        source: 'doi',
+                        uniqueId: work.doi
+                    });
+                    successCount++;
+                } else {
+                    // Fallback: create with available data if DOI lookup fails
+                    await createMyPublication({
+                        title: work.title,
+                        authors: work.authors || '',
+                        year: work.year || new Date().getFullYear(),
+                        journal: 'Unknown',
+                        source: 'doi',
+                        uniqueId: work.doi
+                    });
+                    successCount++;
+                }
+            } catch (e) {
+                errorCount++;
+            }
+        }
+
+        if (successCount > 0) {
+            notifications.show({
+                message: `Added ${successCount} publication(s) from ORCID`,
+                color: 'green'
+            });
+            await refetch();
+            closeAddOrcidModal();
+        }
+        if (errorCount > 0) {
+            notifications.show({
+                message: `Failed to add ${errorCount} publication(s)`,
+                color: 'red'
+            });
+        }
+        setIsOrcidSubmitting(false);
     };
 
     const handleAddDoiSubmit = doiForm.handleSubmit(async ({ doi }: SearchByDoiSchema) => {
@@ -213,6 +320,7 @@ const MyPublicationsPage = () => {
                 </form>
             </Modal>
 
+
             <Modal opened={isAddDoiModalOpen} onClose={closeAddDoiModal} title="Add publication by DOI" centered size="md">
                 <form onSubmit={handleAddDoiSubmit}>
                     <TextInput
@@ -229,12 +337,68 @@ const MyPublicationsPage = () => {
                 </form>
             </Modal>
 
+
+            <Modal opened={isAddOrcidModalOpen} onClose={closeAddOrcidModal} title="Add publications by ORCID" centered size="xxl">
+                <Stack>
+                    <Group align="flex-end">
+                        <TextInput
+                            label="ORCID"
+                            placeholder="0000-0002-8529-9990"
+                            value={orcidInput}
+                            onChange={(e) => setOrcidInput(e.currentTarget.value)}
+                            style={{ flex: 1 }}
+                        />
+                        <Button
+                            onClick={handleSearchOrcid}
+                            loading={isOrcidSearching}
+                            disabled={!orcidInput.trim()}
+                        >
+                            Search
+                        </Button>
+                    </Group>
+
+                    {orcidWorks.length > 0 && (
+                        <>
+                            <Text size="sm" c="dimmed">
+                                Found {orcidWorks.length} publication(s). Select the ones you want to add:
+                            </Text>
+                            <DataTable
+                                height={400}
+                                withTableBorder
+                                records={orcidWorks}
+                                selectedRecords={selectedOrcidWorks}
+                                onSelectedRecordsChange={setSelectedOrcidWorks}
+                                idAccessor='doi'
+                                columns={[
+                                    { accessor: 'title', title: 'Title', width: 300 },
+                                    { accessor: 'authors', title: 'Authors', width: 300 },
+                                    { accessor: 'year', title: 'Year', width: 100 },
+                                    { accessor: 'doi', title: 'DOI', width: 300 }
+                                ]}
+                            />
+                            <Group justify="flex-end" mt="md">
+                                <Button variant="default" onClick={closeAddOrcidModal}>Cancel</Button>
+                                <Button
+                                    color="teal"
+                                    onClick={handleSubmitSelectedOrcid}
+                                    loading={isOrcidSubmitting}
+                                    disabled={selectedOrcidWorks.length === 0}
+                                >
+                                    Add {selectedOrcidWorks.length} selected
+                                </Button>
+                            </Group>
+                        </>
+                    )}
+                </Stack>
+            </Modal>
+
+
             <Modal opened={isAssignModalOpen} onClose={closeAssignModal} title="Assign publication to project" centered>
                 <form onSubmit={handleAssignSubmit}>
                     <Stack>
                         {!isProjectsPending && projectOptions.length === 0 ? (
                             <Text c="dimmed" size="sm">
-                                You don't have any active projects to assign publications to. 
+                                You don't have any active projects to assign publications to.
                                 Please create a project first or wait for your project request to be approved.
                             </Text>
                         ) : (
@@ -252,9 +416,9 @@ const MyPublicationsPage = () => {
                         )}
                         <Group justify="flex-end">
                             <Button variant="default" type="button" onClick={closeAssignModal}>Cancel</Button>
-                            <Button 
-                                type="submit" 
-                                loading={assignMutation.isPending} 
+                            <Button
+                                type="submit"
+                                loading={assignMutation.isPending}
                                 disabled={!assignProjectId || projectOptions.length === 0}
                             >
                                 Assign
@@ -269,6 +433,7 @@ const MyPublicationsPage = () => {
             <Group mt={10} mb={20}>
                 <Button color="teal" onClick={openAddModal}>Add publication manually</Button>
                 <Button color="blue" onClick={openAddDoiModal}>Add by DOI</Button>
+                <Button color="blue" onClick={openAddOrcidModal}>Add by ORCID</Button>
             </Group>
             <DataTable
                 height={500}
