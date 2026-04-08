@@ -92,6 +92,8 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Orc
 		setIsSearching(true);
 		try {
 			const result = await searchByResearcherId(trimmed);
+			console.log("---")
+			console.log(result)
 			setWorks(result?.works || []);
 			if (!result?.works?.length) {
 				notifications.show({ message: 'No publications found for this ORCID', color: 'blue' });
@@ -187,7 +189,6 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Orc
 							selectable
 							highlightOnHover
 							onRowClick={({ record }) => toggleRecord(record)}
-							rowClickable
 							columns={[
 								{ accessor: 'title', title: 'Title', width: 300 },
 								{ accessor: 'authors', title: 'Authors', width: 300 },

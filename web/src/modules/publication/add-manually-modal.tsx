@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -6,7 +6,7 @@ import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
 import { Modal, Button, TextInput, Group, NumberInput } from '@mantine/core'
 import { notifications } from '@mantine/notifications';
 import type { Publication } from '@/modules/publication/model';
-import { createMyPublication } from '@/modules/publication/api/my-publications';
+import { createMyPublication, updateMyPublication } from '@/modules/publication/api/my-publications';
 import { manualPublicationSchema, ManualPublicationSchema } from './form'
 import { useAssignMyPublicationMutation, useDeleteMyPublicationMutation, useMyPublicationsQuery } from '@/modules/publication/my-queries';
 
@@ -14,23 +14,46 @@ interface AddModalProps {
 	opened: boolean;
 	onClose: () => void;
 	onSuccess: () => Promise<void>;
+	editPublication?: Publication | null;
 }
 
-export function AddManuallyModal({ opened, onClose, onSuccess }: AddModalProps) {
-	const addForm = useForm({ resolver: zodResolver(manualPublicationSchema) })
-	console.log("In add Manually modal")
+export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }: AddModalProps) {
+	const isEditMode = !!editPublication;
+	const addForm = useForm({
+		resolver: zodResolver(manualPublicationSchema),
+		defaultValues: isEditMode ? {
+			title: editPublication.title,
+			authors: editPublication.authors,
+			year: editPublication.year,
+			journal: editPublication.journal,
+		} : undefined
+	});
 
 	const handleClose = () => {
 		addForm.reset();
 		onClose()
 	};
 
+	useEffect(() => {
+		if (editPublication) {
+			addForm.reset({
+				title: editPublication.title,
+				authors: editPublication.authors,
+				year: editPublication.year,
+				journal: editPublication.journal,
+			});
+		}
+	}, [editPublication, addForm]);
+
 	const handleSubmit = addForm.handleSubmit(async (values: ManualPublicationSchema) => {
-		console.log("in handle submit")
-		console.log(values)
 		try {
-			await createMyPublication({ ...values, source: 'manual' });
-			notifications.show({ message: 'Publication added' });
+			if (isEditMode && editPublication?.id) {
+				await updateMyPublication(editPublication.id, { ...values, source: editPublication.source || 'manual' });
+				notifications.show({ message: 'Publication added' });
+			} else {
+				await createMyPublication({ ...values, source: 'manual' });
+				notifications.show({ message: 'Publication added' });
+			}
 			onSuccess();
 			handleClose();
 		} catch (error) {
@@ -40,7 +63,7 @@ export function AddManuallyModal({ opened, onClose, onSuccess }: AddModalProps) 
 
 
 	return (
-		<Modal opened={opened} onClose={handleClose} title="Add publication" centered size="xl">
+		<Modal opened={opened} onClose={handleClose} title={isEditMode ? 'Edit publication' : 'Add publication'} centered size="xl">
 			<form onSubmit={handleSubmit}>
 				<TextInput label="Title" {...addForm.register('title')} error={addForm.formState.errors.title?.message} withAsterisk />
 				<TextInput label="Authors" {...addForm.register('authors')} error={addForm.formState.errors.authors?.message} withAsterisk />
@@ -62,7 +85,9 @@ export function AddManuallyModal({ opened, onClose, onSuccess }: AddModalProps) 
 				<TextInput label="Journal" {...addForm.register('journal')} error={addForm.formState.errors.journal?.message} withAsterisk />
 				<Group mt={15} justify="flex-end">
 					<Button variant="default" type="button" onClick={handleClose}>Cancel</Button>
-					<Button type="submit" loading={addForm.formState.isSubmitting}>Add publication</Button>
+					<Button type="submit" loading={addForm.formState.isSubmitting}>
+						{isEditMode ? 'Update publication' : 'Add publication'}
+					</Button>
 				</Group>
 			</form>
 		</Modal>

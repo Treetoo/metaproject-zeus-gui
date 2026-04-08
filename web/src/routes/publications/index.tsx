@@ -48,6 +48,7 @@ const MyPublicationsPage = () => {
 	const [assignProjectId, setAssignProjectId] = useState<string | null>(null);
 	const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 	const [publicationToAssign, setPublicationToAssign] = useState<Publication | null>(null);
+	const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
 
 	const addForm = useForm<ManualPublicationSchema>({ resolver: zodResolver(manualPublicationSchema) });
 	const pubIdForm = useForm<SearchByPubIdSchema>({ resolver: zodResolver(searchByPubIdSchema), defaultValues: { doi: '' } });
@@ -122,6 +123,7 @@ const MyPublicationsPage = () => {
 		if (!pub.id) return;
 		modals.openConfirmModal({
 			title: 'Delete publication?',
+			yOffset: 100,
 			children: 'This will permanently delete the publication and unassign it from any project.',
 			confirmProps: { color: 'red' },
 			labels: { confirm: 'Delete', cancel: 'Cancel' },
@@ -140,9 +142,10 @@ const MyPublicationsPage = () => {
 	return (
 		<Box>
 			<AddManuallyModal
-				opened={activeModal === 'manual'}
-				onClose={closeModal}
+				opened={activeModal === 'manual' || activeModal === 'edit'}
+				onClose={() => { setEditingPublication(null); closeModal(); }}
 				onSuccess={handleSuccess}
+				editPublication={editingPublication}
 			/>
 
 			<IdentifierAddModal
@@ -223,17 +226,18 @@ const MyPublicationsPage = () => {
 					{ accessor: 'journal', title: 'Journal' },
 					{ accessor: 'year', title: 'Year', width: 120 },
 					{
-						accessor: 'actions', title: '', width: 220, textAlign: 'right',
+						accessor: 'actions', title: '', width: 280, textAlign: 'right',
 						render: (pub: Publication) => (
 							<Group gap={8} justify="flex-end">
 								<Button size="xs" variant="light" onClick={() => openAssignModal(pub)}>Assign to project</Button>
+								<Button size="xs" variant="blue" onClick={() => { setEditingPublication(pub); setActiveModal('edit'); }}>Edit</Button>
 								<Button size="xs" color="red" variant="light" onClick={() => deletePublication(pub)}>Delete</Button>
 							</Group>
 						)
 					}
 				]}
 			/>
-		</Box>
+		</Box >
 	);
 };
 
