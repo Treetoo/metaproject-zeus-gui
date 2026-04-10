@@ -43,44 +43,6 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Orc
 		);
 	};
 
-	const handleSubmit = form.handleSubmit(async ({ identifier }: { identifier: string }) => {
-		const trimmed = identifier.trim();
-		if (!trimmed) {
-			form.setError('identifier', { message: ` is required` });
-			return;
-		}
-
-		// `TODO:` Replace with functions
-		const type = 'doi'
-
-		setIsSubmitting(true);
-		try {
-			const publication = await searchByPubId(trimmed);
-			if (!publication) {
-				form.setError('identifier', { message: 'Publication not found' });
-				setIsSubmitting(false);
-				return;
-			}
-
-			await createMyPublication({
-				source: type,
-				uniqueId: trimmed,
-				title: publication.title,
-				authors: publication.authors,
-				year: publication.year,
-				journal: publication.journal,
-			});
-
-			notifications.show({ message: `Publication added by ` });
-			await onSuccess();
-			handleClose();
-		} catch {
-			notifications.show({ message: 'Error adding publication', color: 'red' });
-		} finally {
-			setIsSubmitting(false);
-		}
-	});
-
 
 	const handleSearchId = async () => {
 		const trimmed = inputId.trim();
@@ -92,8 +54,6 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Orc
 		setIsSearching(true);
 		try {
 			const result = await searchByResearcherId(trimmed);
-			console.log("---")
-			console.log(result)
 			setWorks(result?.works || []);
 			if (!result?.works?.length) {
 				notifications.show({ message: 'No publications found for this ORCID', color: 'blue' });
@@ -127,7 +87,6 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Orc
 
 		for (const work of worksWithUniqueId) {
 			try {
-				// TODO: Publication source
 				work.source = "doi";
 				await createMyPublication(work)
 				successCount++;
