@@ -30,7 +30,7 @@ import type { Publication } from '@/modules/publication/model';
 import { searchByPubId } from '@/modules/publication/api/search-by-publication-id';
 import { useMyActiveProjectsQuery } from '@/modules/project/queries';
 
-type ModalType = 'manual' | 'doi' | 'orcid' | 'assign'; // | 'ark' | 'nma' | 'orcid' | 'assign' | null;
+type ModalType = 'manual' | 'pubId' | 'orcid' | 'assign'; // | 'ark' | 'nma' | 'orcid' | 'assign' | null;
 
 const MyPublicationsPage = () => {
 	const [activeModal, setActiveModal] = useState<ModalType>(null);
@@ -51,8 +51,8 @@ const MyPublicationsPage = () => {
 	const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
 
 	const addForm = useForm<ManualPublicationSchema>({ resolver: zodResolver(manualPublicationSchema) });
-	const pubIdForm = useForm<SearchByPubIdSchema>({ resolver: zodResolver(searchByPubIdSchema), defaultValues: { doi: '' } });
-	const researcherIdForm = useForm<SearchByResearcherIdSchema>({ resolver: zodResolver(searchByResearcherIdSchema), defaultValues: { doi: '' } });
+	const pubIdForm = useForm<SearchByPubIdSchema>({ resolver: zodResolver(searchByPubIdSchema), defaultValues: { pubId: '' } });
+	const researcherIdForm = useForm<SearchByResearcherIdSchema>({ resolver: zodResolver(searchByResearcherIdSchema), defaultValues: { pubId: '' } });
 	const isHttpError = (value: unknown): value is HTTPError => value instanceof HTTPError;
 
 
@@ -149,12 +149,12 @@ const MyPublicationsPage = () => {
 			/>
 
 			<IdentifierAddModal
-				opened={activeModal === 'doi'}
+				opened={activeModal === 'pubId'}
 				onClose={closeModal}
 				onSuccess={handleSuccess}
-				title="Add publication by DOI"
-				placeholder="asdf"
-				label="DOI"
+				title="Add publication using publication ID"
+				placeholder=""
+				label="Publication id"
 			/>
 
 			{/*Add by ORCID*/}
@@ -204,7 +204,7 @@ const MyPublicationsPage = () => {
 			<Title order={3}><IconLibrary /> My publications</Title>
 			<Group mt={10} mb={20}>
 				<Button color="teal" onClick={() => setActiveModal('manual')}>Add publication manually</Button>
-				<Button color="blue" onClick={() => setActiveModal('doi')}>Add by publication ID</Button>
+				<Button color="blue" onClick={() => setActiveModal('pubId')}>Add by publication ID</Button>
 				<Button color="green" onClick={() => setActiveModal('orcid')}>Add by reasearcher ID</Button>
 			</Group>
 			<DataTable

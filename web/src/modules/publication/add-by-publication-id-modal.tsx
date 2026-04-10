@@ -24,6 +24,7 @@ const TYPE_OPTIONS = [
 	{ value: 'doi', label: 'DOI' },
 	{ value: 'pmid', label: 'PMID' },
 	{ value: 'isbn', label: 'ISBN' },
+	{ value: 'nma', label: 'NMA' },
 ];
 
 export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, placeholder }: IdentifierAddModalProps) {
@@ -47,7 +48,6 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 			return;
 		}
 
-		// `TODO:` Replace with functions
 		if (forceTypeChange && selectedType === 'unknown') {
 			notifications.show({
 				message: 'Previous attempt failed. Please select a specific type from the dropdown or cancel.',
