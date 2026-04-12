@@ -50,6 +50,7 @@
               "resources": "All resources",
               "allocations": "All allocations",
               "allocation_requests": "Allocation requests",
+              "publication_requests": "Publication requests",
               "stages": "Failed stages"
             }
           },
@@ -60,7 +61,8 @@
               "requests": "Project requests",
               "resources": "All resources",
               "allocations": "All allocations",
-              "allocation_requests": "Allocation requests"
+              "allocation_requests": "Allocation requests",
+              "publication_requests": "Publication requests"
             }
           },
           "publications": {
