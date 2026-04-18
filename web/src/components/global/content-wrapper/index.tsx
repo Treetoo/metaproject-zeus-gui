@@ -9,7 +9,7 @@ const MainContentWrapper = ({
 		children: React.ReactNode;
 	} & ContainerProps
 >) => (
-	<Container size="xl" {...props}>
+	<Container size="xxl" {...props}>
 		{children}
 	</Container>
 );

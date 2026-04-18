@@ -1,9 +1,10 @@
-import { Box, Title } from '@mantine/core';
+import { Box, Title, Badge, Group, Button } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import React, { useState, useMemo } from 'react';
 import type { DataTableSortStatus } from 'mantine-datatable';
 import { DataTable } from 'mantine-datatable';
 import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 import PageBreadcrumbs from '@/components/global/page-breadcrumbs';
 import { PUBLICATION_PAGE_SIZES } from '@/modules/publication/constants';
@@ -12,12 +13,21 @@ import { usePublicationRequestsQuery } from '@/modules/publication/queries'; // 
 import { getSortQuery } from '@/modules/api/sorting/utils';
 import { getCurrentRole } from '@/modules/auth/methods/getCurrentRole';
 import { Role } from '@/modules/user/role';
+import { PublicationApprovalDetail } from './detail';
+
+interface PendingPublication extends Publication {
+	status: 'pending' | 'approved' | 'rejected';
+	projectId: number;
+	projectName: string;
+}
 
 const PublicationRequests = () => {
 	const { t } = useTranslation();
 	const role = getCurrentRole();
 	const prefix = role === Role.ADMIN ? '/admin' : '/director';
 
+	const [selectedPub, setSelectedPub] = useState<PendingPublication | null>(null);
+	const [detailOpen, setDetailOpen] = useState(false);
 	const [page, setPage] = useState(1);
 	const [limit, setLimit] = useState(PUBLICATION_PAGE_SIZES[0]);
 	const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Publication>>({
@@ -30,7 +40,24 @@ const PublicationRequests = () => {
 		[sortStatus]
 	);
 
-	// This hook should fetch publications with status='pending'
+	const handleRowClick = (publication: PendingPublication) => {
+		setSelectedPub(publication);
+		setDetailOpen(true);
+	};
+
+	const queryClient = useQueryClient();
+	const handleActionComplete = async () => {
+		await refetch();
+		await queryClient.invalidateQueries({
+			queryKey: ['publications', 'requests']
+		});
+	}
+
+	const handleCloseDetail = () => {
+		setDetailOpen(false);
+		setSelectedPub(null);
+	}
+
 	const { data, isPending, refetch } = usePublicationRequestsQuery({ page, limit }, sortQuery);
 
 	const records = data?.data ?? [];
@@ -49,7 +76,7 @@ const PublicationRequests = () => {
 			/>
 			<Title order={2}>{t('routes.PublicationRequests.title')}</Title>
 
-			<Box mt={15}>
+			<Box mt={15} >
 				<DataTable
 					height={500}
 					withTableBorder
@@ -74,14 +101,15 @@ const PublicationRequests = () => {
 					}}
 					columns={[
 						{
-							accessor: 'id',
-							title: t('routes.PublicationRequests.table.id'),
-							sortable: true,
-							width: 80
+							accessor: 'projectId',
+							title: t('routes.PublicationRequests.table.project_title'),
+							width: 200,
+							render: (record) => (
+								<span>{record.projectName || `Project #${record.projectId}`}</span>)
 						},
 						{
-							accessor: 'title',
-							title: t('routes.PublicationRequests.table.title'),
+							accessor: 'Project title',
+							title: t('routes.PublicationRequests.table.publication_title'),
 							sortable: true,
 							render: (publication) => (
 								<Link
@@ -98,16 +126,16 @@ const PublicationRequests = () => {
 							sortable: false
 						},
 						{
-							accessor: 'year',
-							title: t('routes.PublicationRequests.table.year'),
+							accessor: 'journal',
+							title: t('routes.PublicationRequests.table.publisher'),
 							sortable: true,
-							width: 100
+							width: 200
 						},
 						{
-							accessor: 'source',
-							title: t('routes.PublicationRequests.table.source'),
+							accessor: 'year',
+							title: t('routes.PublicationRequests.table.publication_year'),
 							sortable: true,
-							width: 120
+							width: 150
 						},
 						{
 							accessor: 'createdAt',
@@ -115,10 +143,36 @@ const PublicationRequests = () => {
 							sortable: true,
 							width: 150,
 							render: ({ createdAt }) => new Date(createdAt).toLocaleDateString()
+						},
+						{
+							acessor: 'actions',
+							title: 'actions',
+							width: 100,
+							textAlign: 'right',
+							render: (record) => (
+								<Button
+									size="xs"
+									variant="light"
+									onClick={(e) => {
+										e.stopPropagation();
+										handleRowClick(record as PendingPublication);
+									}}
+								>
+									Review
+								</Button>
+							)
 						}
 					]}
 				/>
 			</Box>
+			<PublicationApprovalDetail
+				opened={detailOpen}
+				onClose={handleCloseDetail}
+				publication={selectedPub}
+				onApproved={handleActionComplete}
+				onRejected={handleActionComplete}
+			/>
+
 		</Box>
 	);
 };

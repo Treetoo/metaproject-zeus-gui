@@ -203,10 +203,17 @@ const ProjectPublications = ({ id }: ProjectPublicationsProps) => {
 						sortable: true
 					},
 					{
+						accessor: 'status',
+						// TODO: change translation
+						title: 'Status',
+						width: 100,
+						sortable: true
+					},
+					{
 						accessor: 'actions',
 						title: t('components.project.publications.index.columns.actions'),
 						textAlign: 'center',
-						width: 160,
+						width: 80,
 						hidden: !permissions.includes('edit_publications'),
 						render: (publication: Publication) => (
 							<Group gap={4} justify="space-between" wrap="nowrap">

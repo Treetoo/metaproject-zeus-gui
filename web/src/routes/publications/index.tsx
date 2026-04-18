@@ -1,4 +1,4 @@
-import { Box, Button, Group, Modal, NumberInput, Select, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Box, Button, Group, Modal, NumberInput, Select, Stack, Text, TextInput, Title, Flex } from '@mantine/core';
 import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
