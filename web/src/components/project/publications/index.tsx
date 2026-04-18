@@ -204,10 +204,14 @@ const ProjectPublications = ({ id }: ProjectPublicationsProps) => {
 					},
 					{
 						accessor: 'status',
-						// TODO: change translation
 						title: 'Status',
 						width: 100,
-						sortable: true
+						sortable: true,
+						render: (publication: Publication) => {
+							const status = publication.status ?? 'pending';
+							const color = status === 'approved' ? 'green' : status === 'rejected' ? 'red' : 'orange';
+							return <Badge color={color}>{status}</Badge>;
+						}
 					},
 					{
 						accessor: 'actions',

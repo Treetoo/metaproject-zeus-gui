@@ -96,6 +96,7 @@ const PublicationRequests = () => {
 					}}
 					sortStatus={sortStatus}
 					onSortStatusChange={async (s) => {
+						setPage(1);
 						setSortStatus(s as DataTableSortStatus<Publication>);
 						await refetch();
 					}}
@@ -103,12 +104,13 @@ const PublicationRequests = () => {
 						{
 							accessor: 'projectId',
 							title: t('routes.PublicationRequests.table.project_title'),
-							width: 200,
+							width: 180,
+							sortable: true,
 							render: (record) => (
 								<span>{record.projectName || `Project #${record.projectId}`}</span>)
 						},
 						{
-							accessor: 'Project title',
+							accessor: 'title',
 							title: t('routes.PublicationRequests.table.publication_title'),
 							sortable: true,
 							render: (publication) => (
@@ -123,26 +125,27 @@ const PublicationRequests = () => {
 						{
 							accessor: 'authors',
 							title: t('routes.PublicationRequests.table.authors'),
-							sortable: false
+							sortable: false,
+							width: 200
 						},
 						{
 							accessor: 'journal',
 							title: t('routes.PublicationRequests.table.publisher'),
 							sortable: true,
-							width: 200
+							width: 180
 						},
 						{
 							accessor: 'year',
 							title: t('routes.PublicationRequests.table.publication_year'),
 							sortable: true,
-							width: 150
+							width: 120
 						},
 						{
 							accessor: 'createdAt',
 							title: t('routes.PublicationRequests.table.createdAt'),
 							sortable: true,
-							width: 150,
-							render: ({ createdAt }) => new Date(createdAt).toLocaleDateString()
+							width: 180,
+							render: ({ createdAt }) => createdAt ? new Date(createdAt).toLocaleString() : 'N/A'
 						},
 						{
 							acessor: 'actions',

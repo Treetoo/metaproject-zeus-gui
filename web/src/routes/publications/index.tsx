@@ -8,9 +8,9 @@ import { modals } from '@mantine/modals';
 import { IconLibrary } from '@tabler/icons-react';
 import { HTTPError } from 'ky';
 import { searchByResearcherId, type OrcidWorkDto } from '@/modules/publication/api/search-by-orcid';
-import { IdentifierAddModal } from '@/modules/publication/add-by-publication-id-modal';
+import { IdentifierAddModal } from '@/components/publications/add-modals/identifier-add-modal';
 import { AddManuallyModal } from '@/modules/publication/add-manually-modal';
-import { ResearcherIdentifierAddModal } from '@/modules/publication/add-by-researcher-id-modal'
+import { ResearcherIdentifierAddModal } from '@/components/publications/add-modals/researcher-identifier-add-modal'
 import PageBreadcrumbs from '@/components/global/page-breadcrumbs';
 import { PUBLICATION_PAGE_SIZES } from '@/modules/publication/constants';
 import { getSortQuery } from '@/modules/api/sorting/utils';

@@ -7,20 +7,17 @@ import { Modal, Button, Group, TextInput, Stack, Text } from '@mantine/core'
 import { notifications } from '@mantine/notifications';
 import type { Publication } from '@/modules/publication/model';
 import { createMyPublication } from '@/modules/publication/api/my-publications';
-import { searchByPubId } from '@/modules/publication/api/search-by-publication-id';
-import { searchByResearcherId } from './api/search-by-researcher-id';
-import { searchByResearcherIdSchema } from './form';
+import { searchByResearcherId } from '@/modules/publication/api/search-by-researcher-id';
 
 const schema = z.object({ identifier: z.string() });
 
-interface OrcidAddModalProps {
+interface ResearcherIdentifierAddModalProps {
 	opened: boolean;
 	onClose: () => void;
 	onSuccess: () => Promise<void>;
 }
 
-
-export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: OrcidAddModalProps) {
+export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: ResearcherIdentifierAddModalProps) {
 	const [inputId, setInputId] = useState('');
 	const [works, setWorks] = useState<Publication[]>([]);
 	const [selectedWorks, setSelectedWorks] = useState<Publication[]>([]);
@@ -35,7 +32,7 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Orc
 		onClose();
 	};
 
-	const toggleRecord = (record) => {
+	const toggleRecord = (record: Publication) => {
 		setSelectedWorks((prev) =>
 			prev.some((r) => r.uniqueId === record.uniqueId)
 				? prev.filter((r) => r.uniqueId !== record.uniqueId)
@@ -65,7 +62,7 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Orc
 		}
 	};
 
-	const handleSubmitSelectedOrcid = async () => {
+	const handleSubmitSelected = async () => {
 		if (selectedWorks.length === 0) return;
 
 		const worksWithUniqueId = selectedWorks.filter((w: Publication) => w.uniqueId);
@@ -109,7 +106,6 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Orc
 				color: 'red'
 			});
 		}
-		onSuccess();
 		setIsSubmitting(false);
 	};
 
@@ -159,7 +155,7 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Orc
 							<Button variant="default" onClick={handleClose}>Cancel</Button>
 							<Button
 								color="teal"
-								onClick={handleSubmitSelectedOrcid}
+								onClick={handleSubmitSelected}
 								loading={isSubmitting}
 								disabled={selectedWorks.length === 0}
 							>

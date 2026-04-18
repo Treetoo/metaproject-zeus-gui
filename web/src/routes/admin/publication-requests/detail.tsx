@@ -5,9 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { notifications } from '@mantine/notifications';
 import { useQueryClient } from '@tanstack/react-query';
-import { request } from '@/modules/api/request';
-import { Method } from '@/modules/api/model';
 import type { Publication } from '@/modules/publication/model';
+import { approvePublication, rejectPublication } from '@/modules/publication/api/approve-publication';
 
 // Validation schema for approval
 const approvalSchema = z.object({
@@ -52,23 +51,14 @@ export const PublicationApprovalDetail = ({
 
 		setIsSubmitting(true);
 		try {
-			// Call your API endpoint: POST /publications/approval/:id/approve
-			const response = await request(`/publications/approval/${publication.id}/approve`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ weight: data.weight || 1 })
-			});
-
-			if (!response.ok) throw new Error('Failed to approve');
+			await approvePublication({ publicationId: publication.id, weight: data.weight || 1 });
 
 			notifications.show({
 				message: 'Publication approved successfully',
 				color: 'green'
 			});
 
-			// Invalidate queries
 			await queryClient.invalidateQueries({ queryKey: ['publications', 'approval', 'pending'] });
-
 			onApproved?.();
 			onClose();
 			form.reset();
@@ -87,12 +77,7 @@ export const PublicationApprovalDetail = ({
 
 		setIsSubmitting(true);
 		try {
-			const response = await request(`/publications/approval/${publication.id}/reject`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' }
-			});
-			console.log(response);
-			if (!response.ok) throw new Error('Failed to reject');
+			await rejectPublication({ publicationId: publication.id });
 
 			notifications.show({
 				message: 'Publication rejected',
@@ -100,7 +85,6 @@ export const PublicationApprovalDetail = ({
 			});
 
 			await queryClient.invalidateQueries({ queryKey: ['publications', 'approval', 'pending'] });
-
 			onRejected?.();
 			onClose();
 		} catch (error) {

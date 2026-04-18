@@ -4,9 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Modal, Button, Group, TextInput, Select } from '@mantine/core'
 import { notifications } from '@mantine/notifications';
-import type { Publication } from '@/modules/publication/model';
-import { createMyPublication, createMyPublicationById } from '@/modules/publication/api/my-publications';
-import { searchByPubId } from '@/modules/publication/api/search-by-publication-id';
+import { createMyPublicationById } from '@/modules/publication/api/my-publications';
 
 const schema = z.object({ identifier: z.string() });
 
@@ -20,7 +18,7 @@ interface IdentifierAddModalProps {
 }
 
 const TYPE_OPTIONS = [
-	{ value: 'unknown', label: 'Auto Detect' }, // Preselected default
+	{ value: 'unknown', label: 'Auto Detect' },
 	{ value: 'doi', label: 'DOI' },
 	{ value: 'pmid', label: 'PMID' },
 	{ value: 'isbn', label: 'ISBN' },
@@ -30,7 +28,7 @@ const TYPE_OPTIONS = [
 export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, placeholder }: IdentifierAddModalProps) {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [selectedType, setSelectedType] = useState<string>('unknown');
-	const [forceTypeChange, setForceTypeChange] = useState(false); // Flag to force user action on error
+	const [forceTypeChange, setForceTypeChange] = useState(false);
 
 	const form = useForm({ resolver: zodResolver(schema) })
 
@@ -57,7 +55,6 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 		}
 		setIsSubmitting(true);
 		try {
-			console.log(identifier);
 			await createMyPublicationById({ uniqueId: identifier, type: selectedType });
 
 			notifications.show({ message: `Publication added by ${label}` });
@@ -101,4 +98,3 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 		</Modal>
 	);
 }
-
