@@ -1,23 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
 import { Modal, Button, TextInput, Group, NumberInput } from '@mantine/core'
 import { notifications } from '@mantine/notifications';
 import type { Publication } from '@/modules/publication/model';
 import { createMyPublication, updateMyPublication } from '@/modules/publication/api/my-publications';
-import { manualPublicationSchema, ManualPublicationSchema } from './form'
-import { useAssignMyPublicationMutation, useDeleteMyPublicationMutation, useMyPublicationsQuery } from '@/modules/publication/my-queries';
+import { manualPublicationSchema, ManualPublicationSchema } from '@/modules/publication/form'
 
-interface AddModalProps {
+interface AddManuallyModalProps {
 	opened: boolean;
 	onClose: () => void;
 	onSuccess: () => Promise<void>;
 	editPublication?: Publication | null;
 }
 
-export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }: AddModalProps) {
+export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }: AddManuallyModalProps) {
 	const isEditMode = !!editPublication;
 	const addForm = useForm({
 		resolver: zodResolver(manualPublicationSchema),
@@ -49,7 +46,7 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 		try {
 			if (isEditMode && editPublication?.id) {
 				await updateMyPublication(editPublication.id, { ...values, source: editPublication.source || 'manual' });
-				notifications.show({ message: 'Publication added' });
+				notifications.show({ message: 'Publication updated' });
 			} else {
 				await createMyPublication({ ...values, source: 'manual' });
 				notifications.show({ message: 'Publication added' });
@@ -60,7 +57,6 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 			notifications.show({ message: 'Error', color: 'red' });
 		}
 	});
-
 
 	return (
 		<Modal opened={opened} onClose={handleClose} title={isEditMode ? 'Edit publication' : 'Add publication'} centered size="xl">

@@ -9,7 +9,7 @@ import { IconLibrary } from '@tabler/icons-react';
 import { HTTPError } from 'ky';
 import { searchByResearcherId, type OrcidWorkDto } from '@/modules/publication/api/search-by-orcid';
 import { IdentifierAddModal } from '@/components/publications/add-modals/identifier-add-modal';
-import { AddManuallyModal } from '@/modules/publication/add-manually-modal';
+import { AddManuallyModal } from '@/components/publications/add-modals/add-manually-modal';
 import { ResearcherIdentifierAddModal } from '@/components/publications/add-modals/researcher-identifier-add-modal'
 import PageBreadcrumbs from '@/components/global/page-breadcrumbs';
 import { PUBLICATION_PAGE_SIZES } from '@/modules/publication/constants';
