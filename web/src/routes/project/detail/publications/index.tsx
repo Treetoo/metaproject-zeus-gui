@@ -1,6 +1,6 @@
 import { ActionIcon, Box, Button, Divider, Group, NumberInput, Stack, TextInput, Title } from '@mantine/core';
 import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
-import { IconClipboardPlus, IconSearch, IconTrash } from '@tabler/icons-react';
+import { IconClipboardPlus, IconTrash } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { HTTPError } from 'ky';
 
 import PageBreadcrumbs from '@/components/global/page-breadcrumbs';
+import { IdentifierAddModal } from '@/components/publications/add-modals/identifier-add-modal';
 import { useProjectOutletContext } from '@/modules/auth/guards/project-detail-guard';
 import { type Publication } from '@/modules/publication/model';
 import {
@@ -20,7 +21,7 @@ import {
 	searchByPubIdSchema as searchByPubIdSchema,
 	type SearchByPubIdSchema as SearchByPubIdSchema
 } from '@/modules/publication/form';
-import { searchByPubId } from '@/modules/publication/api/search-by-publication-id';
+import { createMyPublicationById } from '@/modules/publication/api/my-publications';
 import PublicationCard from '@/components/project/publications/publication-card';
 import { useAddPublicationsMutation } from '@/modules/publication/mutations';
 import { useAssignMyPublicationMutation, useMyPublicationsQuery } from '@/modules/publication/my-queries';
@@ -36,7 +37,8 @@ const ProjectPublicationsAddPage = () => {
 	const { project } = useProjectOutletContext();
 
 	const [publications, setPublications] = useState<Publication[]>([]);
-	const [isSearching, setIsSearching] = useState(false);
+	const [isPubIdModalOpen, setIsPubIdModalOpen] = useState(false);
+	const [isSubmittingPubId, setIsSubmittingPubId] = useState(false);
 
 	const searchPubIdForm = useForm<SearchByPubIdSchema>({
 		resolver: zodResolver(searchByPubIdSchema)
@@ -80,24 +82,9 @@ const ProjectPublicationsAddPage = () => {
 		}
 	};
 
-	const searchDoiSubmit = async (values: SearchByPubIdSchema) => {
-		setIsSearching(true);
-		const publication = await searchByDoi(values.doi);
-		setIsSearching(false);
-
-		if (!publication) {
-			searchPubIdForm.setError('doi', {
-				type: 'custom',
-				message: 'Publication not found'
-			});
-			return;
-		}
-
-		searchPubIdForm.reset();
-		handleSelect({
-			...publication,
-			source: 'doi'
-		});
+	const handlePubIdSuccess = async () => {
+		await queryClient.invalidateQueries({ queryKey: ['project', project.id, 'publications'] });
+		navigate(`/project/${project.id}`);
 	};
 
 	const onManualAddSubmit = (values: ManualPublicationSchema) => {
@@ -255,19 +242,13 @@ const ProjectPublicationsAddPage = () => {
 				{t('routes.ProjectPublicationsAddPage.title')}
 			</Title>
 			<Stack mt={20}>
-				<form onSubmit={searchDoiForm.handleSubmit(searchDoiSubmit)}>
-					<Stack>
-						<TextInput
-							label="DOI"
-							placeholder="Search by DOI"
-							error={searchDoiForm.formState.errors.doi?.message}
-							{...searchDoiForm.register('doi')}
-						/>
-						<Button fullWidth type="submit" leftSection={<IconSearch />} loading={isSearching}>
-							{t('routes.ProjectPublicationsAddPage.search_by_doi')}
-						</Button>
-					</Stack>
-				</form>
+				<Button
+					onClick={() => setIsPubIdModalOpen(true)}
+					color="blue"
+					fullWidth
+				>
+					Add by publication ID
+				</Button>
 				<Divider label="or" />
 				<Button
 					onClick={openManualPublicationAdd}
@@ -376,6 +357,16 @@ const ProjectPublicationsAddPage = () => {
 					</Group>
 				</Box>
 			)}
+
+			<IdentifierAddModal
+				opened={isPubIdModalOpen}
+				onClose={() => setIsPubIdModalOpen(false)}
+				onSuccess={handlePubIdSuccess}
+				title="Add publication using publication ID"
+				placeholder="Enter DOI, PMID, ISBN, or NMA"
+				label="Publication ID"
+				projectId={project.id}
+			/>
 		</Box>
 	);
 };

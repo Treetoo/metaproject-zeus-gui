@@ -27,7 +27,7 @@ export const listMyPublications = async (
   );
 
 export const createMyPublicationById = async (data: CreateMyPublicationByIdRequest) =>
-  request(`/my/publications/add-by-id`, {
+  request<{ id: number }>(`/my/publications/add-by-id`, {
     method: Method.POST,
     json: data
   });

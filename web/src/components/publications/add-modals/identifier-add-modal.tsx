@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Modal, Button, Group, TextInput, Select } from '@mantine/core'
 import { notifications } from '@mantine/notifications';
-import { createMyPublicationById } from '@/modules/publication/api/my-publications';
+import { createMyPublicationById, assignMyPublicationToProject } from '@/modules/publication/api/my-publications';
 
 const schema = z.object({ identifier: z.string() });
 
@@ -15,6 +15,7 @@ interface IdentifierAddModalProps {
 	title: string;
 	label: string;
 	placeholder: string;
+	projectId?: number;
 }
 
 const TYPE_OPTIONS = [
@@ -25,7 +26,7 @@ const TYPE_OPTIONS = [
 	{ value: 'nma', label: 'NMA' },
 ];
 
-export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, placeholder }: IdentifierAddModalProps) {
+export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, placeholder, projectId }: IdentifierAddModalProps) {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [selectedType, setSelectedType] = useState<string>('unknown');
 	const [forceTypeChange, setForceTypeChange] = useState(false);
@@ -55,14 +56,26 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 		}
 		setIsSubmitting(true);
 		try {
-			await createMyPublicationById({ uniqueId: identifier, type: selectedType });
+			const result = await createMyPublicationById({ uniqueId: identifier, type: selectedType });
+			console.log('API response:', result);
 
-			notifications.show({ message: `Publication added by ${label}` });
+			if (projectId) {
+				if (result && typeof result === 'object' && 'id' in result) {
+					await assignMyPublicationToProject(result.id, projectId);
+					notifications.show({ message: `Publication added by ${label} and assigned to project`, color: 'green' });
+				} else {
+					console.error('Missing id in response:', result);
+					throw new Error('Publication created but response is missing id field');
+				}
+			} else {
+				notifications.show({ message: `Publication added by ${label}` });
+			}
 			await onSuccess();
 			handleClose();
-		} catch {
+		} catch (e) {
+			console.error('Error:', e);
 			setForceTypeChange(true);
-			notifications.show({ message: 'Error adding publication. Please choose a different type and try again', color: 'red' });
+			notifications.show({ message: e instanceof Error ? e.message : 'Error adding publication', color: 'red' });
 		} finally {
 			setIsSubmitting(false);
 		}
