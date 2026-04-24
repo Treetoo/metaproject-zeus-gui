@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Stack, Text, Group, Button, NumberInput, Badge, Box, Divider } from '@mantine/core';
+import { Modal, Stack, Text, Group, Button, NumberInput, Badge, Box, Divider, Anchor } from '@mantine/core';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -110,6 +110,13 @@ export const PublicationApprovalDetail = ({
 				<Box>
 					<Text size="sm" c="dimmed" mb={4}>Title</Text>
 					<Text fw={500} size="lg">{publication.title}</Text>
+				</Box>
+
+				<Box>
+					<Text size="sm" c="dimmed" mb={4}>Link</Text>
+					<Anchor href={publication.url} target="_blank" rel="noopener noreferrer" size="lg">
+						{publication.url}
+					</Anchor>
 				</Box>
 
 				<Group grow>

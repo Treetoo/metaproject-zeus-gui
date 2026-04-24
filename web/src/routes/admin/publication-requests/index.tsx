@@ -102,14 +102,6 @@ const PublicationRequests = () => {
 					}}
 					columns={[
 						{
-							accessor: 'projectId',
-							title: t('routes.PublicationRequests.table.project_title'),
-							width: 180,
-							sortable: true,
-							render: (record) => (
-								<span>{record.projectName || `Project #${record.projectId}`}</span>)
-						},
-						{
 							accessor: 'title',
 							title: t('routes.PublicationRequests.table.publication_title'),
 							sortable: true,

@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Modal, Button, Group, TextInput, Select } from '@mantine/core'
 import { notifications } from '@mantine/notifications';
 import { createMyPublicationById, assignMyPublicationToProject } from '@/modules/publication/api/my-publications';
+import { useMyActiveProjectsQuery } from '@/modules/project/queries';
 
 const schema = z.object({ identifier: z.string() });
 
@@ -15,13 +16,13 @@ interface IdentifierAddModalProps {
 	title: string;
 	label: string;
 	placeholder: string;
-	projectId?: number;
+	projectId: number;
 }
 
 const TYPE_OPTIONS = [
 	{ value: 'unknown', label: 'Auto Detect' },
 	{ value: 'doi', label: 'DOI' },
-	{ value: 'pmid', label: 'PMID' },
+	{ value: 'pubmed', label: 'PMID' },
 	{ value: 'isbn', label: 'ISBN' },
 	{ value: 'nma', label: 'NMA' },
 ];
@@ -30,6 +31,22 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [selectedType, setSelectedType] = useState<string>('unknown');
 	const [forceTypeChange, setForceTypeChange] = useState(false);
+	const { data: myProjects, isPending: isProjectsPending } = useMyActiveProjectsQuery();
+	const [assignProjectId, setAssignProjectId] = useState<string | null>(null);
+
+	const projectOptions = useMemo(() => {
+		if (!myProjects || !Array.isArray(myProjects)) return [];
+		return myProjects.map(project => ({
+			value: String(project.id),
+			label: project.title
+		}));
+	}, [myProjects]);
+
+	useEffect(() => {
+		if (projectOptions.length === 1) {
+			setAssignProjectId(projectOptions[0].value);
+		}
+	}, [projectOptions]);
 
 	const form = useForm({ resolver: zodResolver(schema) })
 
@@ -56,8 +73,8 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 		}
 		setIsSubmitting(true);
 		try {
-			const result = await createMyPublicationById({ uniqueId: identifier, type: selectedType });
-			console.log('API response:', result);
+			console.log(assignProjectId);
+			const result = await createMyPublicationById({ uniqueId: identifier, type: selectedType, projectId: assignProjectId });
 
 			if (projectId) {
 				if (result && typeof result === 'object' && 'id' in result) {
@@ -84,30 +101,49 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 	return (
 		<Modal opened={opened} onClose={handleClose} title={title} centered size="md">
 			<form onSubmit={handleSubmit}>
-				<Group align="flex-start">
-					<TextInput
-						label={label}
-						placeholder={placeholder}
-						{...form.register('identifier')}
-						error={form.formState.errors.identifier?.message}
-						required
-					/>
-					<Select
-						label="Type"
-						data={TYPE_OPTIONS}
-						value={selectedType}
-						onChange={(value) => {
-							setSelectedType(value || 'unknown');
-							if (value !== 'unknown') setForceTypeChange(false);
-						}}
-						error={forceTypeChange && selectedType === 'unknown' ? 'Selection required' : false}
-					/>
-				</Group>
+				{!isProjectsPending && projectOptions.length === 0 ? (
+					<Text c="dimmed" size="sm">
+						You don't have any active projects to assign publications to.
+						Please create a project first or wait for your project request to be approved.
+					</Text>
+				) : (
+					<Group align="flex-start">
+						<TextInput
+							label={label}
+							placeholder={placeholder}
+							{...form.register('identifier')}
+							error={form.formState.errors.identifier?.message}
+							required
+						/>
+						<Select
+							label="Type"
+							data={TYPE_OPTIONS}
+							value={selectedType}
+							onChange={(value) => {
+								setSelectedType(value || 'unknown');
+								if (value !== 'unknown') setForceTypeChange(false);
+							}}
+							error={forceTypeChange && selectedType === 'unknown' ? 'Selection required' : false}
+						/>
+						<Select
+							label="Select project"
+							placeholder={isProjectsPending ? "Loading projects..." : "Choose a project"}
+							data={projectOptions}
+							value={assignProjectId}
+							onChange={setAssignProjectId}
+							// TODO: check
+							//disabled={assignMutation.isPending || isProjectsPending}
+							searchable
+							nothingFoundMessage="No projects found"
+							description="Only active projects you are a member of are shown"
+						/>
+					</Group>
+				)}
 				<Group mt={15} justify="flex-end">
 					<Button variant="default" type="button" onClick={handleClose}>Cancel</Button>
 					<Button variant="default" type="button" onClick={handleSubmit}>Add</Button>
 				</Group>
 			</form>
-		</Modal>
+		</Modal >
 	);
 }

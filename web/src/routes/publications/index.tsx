@@ -1,4 +1,4 @@
-import { Box, Button, Group, Modal, NumberInput, Select, Stack, Text, TextInput, Title, Flex } from '@mantine/core';
+import { Box, Button, Group, Modal, NumberInput, Select, Stack, Text, TextInput, Title, Flex, Badge } from '@mantine/core';
 import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
@@ -208,7 +208,6 @@ const MyPublicationsPage = () => {
 				<Button color="green" onClick={() => setActiveModal('orcid')}>Add by reasearcher ID</Button>
 			</Group>
 			<DataTable
-				height={500}
 				withTableBorder
 				fetching={isPending}
 				records={data?.data ?? []}
@@ -225,6 +224,15 @@ const MyPublicationsPage = () => {
 					{ accessor: 'authors', title: 'Authors' },
 					{ accessor: 'journal', title: 'Journal' },
 					{ accessor: 'year', title: 'Year', width: 120 },
+					{
+						accessor: 'status',
+						title: 'Status',
+						width: 110,
+						render: (pub: Publication) => {
+							const color = pub.status === 'approved' ? 'green' : status === 'rejected' ? 'red' : 'orange';
+							return <Badge color={color}>{pub.status}</Badge>;
+						}
+					},
 					{
 						accessor: 'actions', title: '', width: 280, textAlign: 'right',
 						render: (pub: Publication) => (

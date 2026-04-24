@@ -208,7 +208,6 @@ const ProjectPublications = ({ id }: ProjectPublicationsProps) => {
 						width: 100,
 						sortable: true,
 						render: (publication: Publication) => {
-							const status = publication.status ?? 'pending';
 							const color = status === 'approved' ? 'green' : status === 'rejected' ? 'red' : 'orange';
 							return <Badge color={color}>{status}</Badge>;
 						}
