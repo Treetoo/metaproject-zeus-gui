@@ -3,9 +3,13 @@ import { request } from '@/modules/api/request';
 import type { PaginationResponse } from '@/modules/api/pagination/model';
 import type { Publication } from '@/modules/publication/model';
 
+export type Project = {
+	projectId: number
+}
+
 export type CreateMyPublicationByIdRequest = {
 	uniqueId: string,
-	projectId: number,
+	project: Project,
 	type: 'doi' | 'unknown' | 'handle' | 'isbn' | 'issn' | 'nma'
 }
 
@@ -14,7 +18,7 @@ export type CreateMyPublicationRequest = {
 	authors: string;
 	year: number;
 	journal: string;
-	projectId: number,
+	project: Project,
 	source: 'doi' | 'manual';
 	uniqueId?: string;
 };

@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'; // 1. Import Controller
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Modal, Button, Group, TextInput, Select } from '@mantine/core'
+import { Modal, Button, Group, TextInput, Select, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { createMyPublicationById, assignMyPublicationToProject } from '@/modules/publication/api/my-publications';
 import { useMyActiveProjectsQuery } from '@/modules/project/queries';
 
-const schema = z.object({ identifier: z.string() });
+// 2. Update Zod schema to require projectId
+const schema = z.object({
+	identifier: z.string().min(1, "Identifier is required"),
+	projectId: z.string({ required_error: "Please select a project" }).min(1, "Please select a project")
+});
+
+type FormValues = z.infer<typeof schema>;
 
 interface IdentifierAddModalProps {
 	opened: boolean;
@@ -27,12 +33,11 @@ const TYPE_OPTIONS = [
 	{ value: 'nma', label: 'NMA' },
 ];
 
-export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, placeholder, projectId }: IdentifierAddModalProps) {
+export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, placeholder, projectId: activeProjectId }: IdentifierAddModalProps) {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [selectedType, setSelectedType] = useState<string>('unknown');
 	const [forceTypeChange, setForceTypeChange] = useState(false);
 	const { data: myProjects, isPending: isProjectsPending } = useMyActiveProjectsQuery();
-	const [assignProjectId, setAssignProjectId] = useState<string | null>(null);
 
 	const projectOptions = useMemo(() => {
 		if (!myProjects || !Array.isArray(myProjects)) return [];
@@ -42,13 +47,19 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 		}));
 	}, [myProjects]);
 
+	const form = useForm<FormValues>({
+		resolver: zodResolver(schema),
+		defaultValues: {
+			identifier: '',
+			projectId: ''
+		}
+	});
+
 	useEffect(() => {
 		if (projectOptions.length === 1) {
-			setAssignProjectId(projectOptions[0].value);
+			form.setValue('projectId', projectOptions[0].value, { shouldValidate: true });
 		}
-	}, [projectOptions]);
-
-	const form = useForm({ resolver: zodResolver(schema) })
+	}, [projectOptions, form]);
 
 	const handleClose = () => {
 		form.reset();
@@ -57,13 +68,7 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 		onClose();
 	};
 
-	const handleSubmit = form.handleSubmit(async ({ identifier }: { identifier: string }) => {
-		const trimmed = identifier.trim();
-		if (!trimmed) {
-			form.setError('identifier', { message: `${label} is required` });
-			return;
-		}
-
+	const handleSubmit = form.handleSubmit(async ({ identifier, projectId }) => {
 		if (forceTypeChange && selectedType === 'unknown') {
 			notifications.show({
 				message: 'Previous attempt failed. Please select a specific type from the dropdown or cancel.',
@@ -71,17 +76,20 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 			});
 			return;
 		}
+
 		setIsSubmitting(true);
 		try {
-			console.log(assignProjectId);
-			const result = await createMyPublicationById({ uniqueId: identifier, type: selectedType, projectId: assignProjectId });
+			const result = await createMyPublicationById({
+				uniqueId: identifier.trim(),
+				type: selectedType,
+				project: { projectId: projectId }
+			});
 
-			if (projectId) {
+			if (activeProjectId) {
 				if (result && typeof result === 'object' && 'id' in result) {
-					await assignMyPublicationToProject(result.id, projectId);
+					await assignMyPublicationToProject(result.id, activeProjectId);
 					notifications.show({ message: `Publication added by ${label} and assigned to project`, color: 'green' });
 				} else {
-					console.error('Missing id in response:', result);
 					throw new Error('Publication created but response is missing id field');
 				}
 			} else {
@@ -89,10 +97,20 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 			}
 			await onSuccess();
 			handleClose();
-		} catch (e) {
-			console.error('Error:', e);
-			setForceTypeChange(true);
-			notifications.show({ message: e instanceof Error ? e.message : 'Error adding publication', color: 'red' });
+		} catch (e: any) {
+			const status = e?.status ||
+				e?.response?.status ||
+				e?.data?.status;
+
+			if (status === 409) {
+				notifications.show({ message: 'Publication is already present.', color: 'orange' });
+				handleClose();
+			} else if (status === 400) {
+				setForceTypeChange(true);
+				notifications.show({ message: 'Could not detect publication type. Please select a publication type and try again', color: 'red' });
+			} else {
+				notifications.show({ message: 'Unexpected error, please try again later', color: 'red' });
+			}
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -125,25 +143,31 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 							}}
 							error={forceTypeChange && selectedType === 'unknown' ? 'Selection required' : false}
 						/>
-						<Select
-							label="Select project"
-							placeholder={isProjectsPending ? "Loading projects..." : "Choose a project"}
-							data={projectOptions}
-							value={assignProjectId}
-							onChange={setAssignProjectId}
-							// TODO: check
-							//disabled={assignMutation.isPending || isProjectsPending}
-							searchable
-							nothingFoundMessage="No projects found"
-							description="Only active projects you are a member of are shown"
+						<Controller
+							name="projectId"
+							control={form.control}
+							render={({ field, fieldState }) => (
+								<Select
+									label="Select project"
+									placeholder={isProjectsPending ? "Loading projects..." : "Choose a project"}
+									data={projectOptions}
+									value={field.value}
+									onChange={(val) => field.onChange(val ?? '')}
+									error={fieldState.error?.message}
+									required
+									searchable
+									nothingFoundMessage="No projects found"
+									description="Only active projects you are a member of are shown"
+								/>
+							)}
 						/>
 					</Group>
 				)}
 				<Group mt={15} justify="flex-end">
 					<Button variant="default" type="button" onClick={handleClose}>Cancel</Button>
-					<Button variant="default" type="button" onClick={handleSubmit}>Add</Button>
+					<Button variant="filled" type="submit" loading={isSubmitting}>Add</Button>
 				</Group>
 			</form>
-		</Modal >
+		</Modal>
 	);
 }

@@ -205,9 +205,10 @@ const ProjectPublications = ({ id }: ProjectPublicationsProps) => {
 					{
 						accessor: 'status',
 						title: 'Status',
-						width: 100,
+						width: 120,
 						sortable: true,
 						render: (publication: Publication) => {
+							const status = publication.status;
 							const color = status === 'approved' ? 'green' : status === 'rejected' ? 'red' : 'orange';
 							return <Badge color={color}>{status}</Badge>;
 						}
