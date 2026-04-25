@@ -19,7 +19,8 @@ export const manualPublicationSchema = z.object({
 	title: z.string(),
 	authors: z.string(),
 	journal: z.string(),
-	year: z.number().min(0).max(2200)
+	year: z.number().min(0).max(2200),
+	projectId: z.string({ required_error: "Please select a project" }).min(1, "Please select a project")
 });
 
 export type ManualPublicationSchema = z.infer<typeof manualPublicationSchema>;

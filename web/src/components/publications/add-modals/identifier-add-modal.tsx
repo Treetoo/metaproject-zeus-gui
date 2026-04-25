@@ -7,7 +7,6 @@ import { notifications } from '@mantine/notifications';
 import { createMyPublicationById, assignMyPublicationToProject } from '@/modules/publication/api/my-publications';
 import { useMyActiveProjectsQuery } from '@/modules/project/queries';
 
-// 2. Update Zod schema to require projectId
 const schema = z.object({
 	identifier: z.string().min(1, "Identifier is required"),
 	projectId: z.string({ required_error: "Please select a project" }).min(1, "Please select a project")

@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Modal, Button, TextInput, Group, NumberInput } from '@mantine/core'
+import { Modal, Button, TextInput, Group, NumberInput, Select } from '@mantine/core'
 import { notifications } from '@mantine/notifications';
 import type { Publication } from '@/modules/publication/model';
 import { createMyPublication, updateMyPublication } from '@/modules/publication/api/my-publications';
 import { manualPublicationSchema, ManualPublicationSchema } from '@/modules/publication/form'
+import { useMyActiveProjectsQuery } from '@/modules/project/queries';
 
 interface AddManuallyModalProps {
 	opened: boolean;
@@ -15,6 +16,8 @@ interface AddManuallyModalProps {
 }
 
 export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }: AddManuallyModalProps) {
+	const { data: myProjects, isPending: isProjectsPending } = useMyActiveProjectsQuery();
+
 	const isEditMode = !!editPublication;
 	const addForm = useForm({
 		resolver: zodResolver(manualPublicationSchema),
@@ -23,8 +26,24 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 			authors: editPublication.authors,
 			year: editPublication.year,
 			journal: editPublication.journal,
+			//projectId: project({ required_error: "Please select a project" }).min(1, "Please select a project")
 		} : undefined
 	});
+
+	const projectOptions = useMemo(() => {
+		if (!myProjects || !Array.isArray(myProjects)) return [];
+		return myProjects.map(project => ({
+			value: String(project.id),
+			label: project.title
+		}));
+	}, [myProjects]);
+
+	useEffect(() => {
+		if (projectOptions.length === 1) {
+			addForm.setValue('projectId', projectOptions[0].value, { shouldValidate: true });
+		}
+	}, [projectOptions, addForm]);
+
 
 	const handleClose = () => {
 		addForm.reset();
@@ -75,6 +94,24 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 							onChange={(value: string | number) => field.onChange(typeof value === 'number' ? value : null)}
 							error={addForm.formState.errors.year?.message}
 							withAsterisk
+						/>
+					)}
+				/>
+				<Controller
+					name="projectId"
+					control={addForm.control}
+					render={({ field, fieldState }) => (
+						<Select
+							label="Select project"
+							placeholder={isProjectsPending ? "Loading projects..." : "Choose a project"}
+							data={projectOptions}
+							value={field.value}
+							onChange={(val) => field.onChange(val ?? '')}
+							error={fieldState.error?.message}
+							required
+							searchable
+							nothingFoundMessage="No projects found"
+							description="Only active projects you are a member of are shown"
 						/>
 					)}
 				/>
