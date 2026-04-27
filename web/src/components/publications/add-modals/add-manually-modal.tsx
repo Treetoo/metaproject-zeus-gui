@@ -26,7 +26,7 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 			authors: editPublication.authors,
 			year: editPublication.year,
 			journal: editPublication.journal,
-			//projectId: project({ required_error: "Please select a project" }).min(1, "Please select a project")
+			url: editPublication.url
 		} : undefined
 	});
 
@@ -40,7 +40,7 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 
 	useEffect(() => {
 		if (projectOptions.length === 1) {
-			addForm.setValue('projectId', projectOptions[0].value, { shouldValidate: true });
+			addForm.setValue('project', projectOptions[0].value, { shouldValidate: true });
 		}
 	}, [projectOptions, addForm]);
 
@@ -57,17 +57,23 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 				authors: editPublication.authors,
 				year: editPublication.year,
 				journal: editPublication.journal,
+				url: editPublication.url,
 			});
 		}
 	}, [editPublication, addForm]);
 
 	const handleSubmit = addForm.handleSubmit(async (values: ManualPublicationSchema) => {
+		if (!isEditMode && !values.project) {
+			addForm.setError('project', { message: 'Please select a project' });
+			return;
+		}
+
 		try {
 			if (isEditMode && editPublication?.id) {
 				await updateMyPublication(editPublication.id, { ...values, source: editPublication.source || 'manual' });
 				notifications.show({ message: 'Publication updated' });
 			} else {
-				await createMyPublication({ ...values, source: 'manual' });
+				await createMyPublication({ ...values, source: 'manual', project: values.project! });
 				notifications.show({ message: 'Publication added' });
 			}
 			onSuccess();
@@ -97,25 +103,28 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 						/>
 					)}
 				/>
-				<Controller
-					name="projectId"
-					control={addForm.control}
-					render={({ field, fieldState }) => (
-						<Select
-							label="Select project"
-							placeholder={isProjectsPending ? "Loading projects..." : "Choose a project"}
-							data={projectOptions}
-							value={field.value}
-							onChange={(val) => field.onChange(val ?? '')}
-							error={fieldState.error?.message}
-							required
-							searchable
-							nothingFoundMessage="No projects found"
-							description="Only active projects you are a member of are shown"
-						/>
-					)}
-				/>
+				{!isEditMode && (
+					<Controller
+						name="project"
+						control={addForm.control}
+						render={({ field, fieldState }) => (
+							<Select
+								label="Select project"
+								placeholder={isProjectsPending ? "Loading projects..." : "Choose a project"}
+								data={projectOptions}
+								value={field.value?.projectId}
+								onChange={(val) => field.onChange(val ? { projectId: Number(val) } : undefined)}
+								error={fieldState.error?.message}
+								required
+								searchable
+								nothingFoundMessage="No projects found"
+								description="Only active projects you are a member of are shown"
+							/>
+						)}
+					/>
+				)}
 				<TextInput label="Journal" {...addForm.register('journal')} error={addForm.formState.errors.journal?.message} withAsterisk />
+				<TextInput label="URL" {...addForm.register('url')} error={addForm.formState.errors.url?.message} withAsterisk />
 				<Group mt={15} justify="flex-end">
 					<Button variant="default" type="button" onClick={handleClose}>Cancel</Button>
 					<Button type="submit" loading={addForm.formState.isSubmitting}>
