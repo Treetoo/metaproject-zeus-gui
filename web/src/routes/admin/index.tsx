@@ -28,6 +28,10 @@ const getLinks = (role: Role) => {
 		{
 			title: `components.global.drawerList.links.${role}.link.allocation_requests`,
 			href: `${prefix}/allocation-requests`
+		},
+		{
+			title: `components.global.drawerList.links.${role}.link.publication_requests`,
+			href: `${prefix}/publication-requests`
 		}
 	];
 

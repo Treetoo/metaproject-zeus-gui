@@ -50,6 +50,7 @@
               "resources": "All resources",
               "allocations": "All allocations",
               "allocation_requests": "Allocation requests",
+              "publication_requests": "Publication requests",
               "stages": "Failed stages"
             }
           },
@@ -60,7 +61,8 @@
               "requests": "Project requests",
               "resources": "All resources",
               "allocations": "All allocations",
-              "allocation_requests": "Allocation requests"
+              "allocation_requests": "Allocation requests",
+              "publication_requests": "Publication requests"
             }
           },
           "publications": {
@@ -277,6 +279,20 @@
     },
     "AllProjects": {
       "title": "All projects"
+    },
+    "PublicationRequests": {
+      "title": "Publication requests",
+      "error": {
+        "connection": "Could not load publication requests, try again later."
+      },
+      "table": {
+        "project_title": "Project title",
+        "publication_title": "Publication title",
+        "publisher": "Publisher",
+        "authors": "Authors",
+        "publication_year": "Publication year",
+        "createdAt": "Created at"
+      }
     },
     "FailedStages": {
       "title": "Failed stages",

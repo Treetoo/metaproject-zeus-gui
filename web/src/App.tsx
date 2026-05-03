@@ -31,6 +31,7 @@ import AllocationDetail from '@/routes/project/detail/allocation/detail';
 import AllProjects from '@/routes/admin/projects';
 import AllocationRequestDetail from '@/routes/admin/allocation-requests/detail';
 import AdminAllocations from '@/routes/admin/allocations';
+import PublicationRequests from '@/routes/admin/publication-requests';
 import AllocationRequestsList from '@/routes/admin/allocation-requests/list';
 import ProjectInvitation from '@/routes/project/invitation';
 import AdminLinkPage from '@/routes/admin';
@@ -95,6 +96,7 @@ const router = createBrowserRouter(
 				<Route path="stages" element={<FailedProjects />} />
 				<Route path="allocations" element={<AdminAllocations />} />
 				<Route path="allocation-requests" element={<AllocationRequestsList />} />
+				<Route path="publication-requests" element={<PublicationRequests/>} />
 				<Route path="allocations/:allocationId" element={<AllocationRequestDetail />} />
 			</Route>
 			<Route path="/director" element={<AdminRouteGuard />}>
@@ -109,6 +111,7 @@ const router = createBrowserRouter(
 				<Route path="resources/:id" element={<ResourceDetailPage />} />
 				<Route path="allocations" element={<AdminAllocations />} />
 				<Route path="allocation-requests" element={<AllocationRequestsList />} />
+				<Route path="publication-requests" element={<PublicationRequests/>} />
 				<Route path="allocations/:allocationId" element={<AllocationRequestDetail />} />
 			</Route>
 			<Route path="*" element={<NotFound />} />

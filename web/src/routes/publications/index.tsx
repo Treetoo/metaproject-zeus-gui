@@ -1,4 +1,4 @@
-import { Box, Button, Group, Modal, NumberInput, Select, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Box, Button, Group, Modal, NumberInput, Select, Stack, Text, TextInput, Title, Flex, Badge } from '@mantine/core';
 import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
@@ -8,9 +8,9 @@ import { modals } from '@mantine/modals';
 import { IconLibrary } from '@tabler/icons-react';
 import { HTTPError } from 'ky';
 import { searchByResearcherId, type OrcidWorkDto } from '@/modules/publication/api/search-by-orcid';
-import { IdentifierAddModal } from '@/modules/publication/add-by-publication-id-modal';
-import { AddManuallyModal } from '@/modules/publication/add-manually-modal';
-import { ResearcherIdentifierAddModal } from '@/modules/publication/add-by-researcher-id-modal'
+import { IdentifierAddModal } from '@/components/publications/add-modals/identifier-add-modal';
+import { AddManuallyModal } from '@/components/publications/add-modals/add-manually-modal';
+import { ResearcherIdentifierAddModal } from '@/components/publications/add-modals/researcher-identifier-add-modal'
 import PageBreadcrumbs from '@/components/global/page-breadcrumbs';
 import { PUBLICATION_PAGE_SIZES } from '@/modules/publication/constants';
 import { getSortQuery } from '@/modules/api/sorting/utils';
@@ -208,7 +208,6 @@ const MyPublicationsPage = () => {
 				<Button color="green" onClick={() => setActiveModal('orcid')}>Add by reasearcher ID</Button>
 			</Group>
 			<DataTable
-				height={500}
 				withTableBorder
 				fetching={isPending}
 				records={data?.data ?? []}
@@ -225,6 +224,15 @@ const MyPublicationsPage = () => {
 					{ accessor: 'authors', title: 'Authors' },
 					{ accessor: 'journal', title: 'Journal' },
 					{ accessor: 'year', title: 'Year', width: 120 },
+					{
+						accessor: 'status',
+						title: 'Status',
+						width: 110,
+						render: (pub: Publication) => {
+							const color = pub.status === 'approved' ? 'green' : status === 'rejected' ? 'red' : 'orange';
+							return <Badge color={color}>{pub.status}</Badge>;
+						}
+					},
 					{
 						accessor: 'actions', title: '', width: 280, textAlign: 'right',
 						render: (pub: Publication) => (

@@ -13,7 +13,8 @@ import {
 	IconPodium,
 	IconQuestionMark,
 	IconReport,
-	IconUserUp
+	IconUserUp,
+	IconArticle,
 } from '@tabler/icons-react';
 import React, { useEffect } from 'react';
 
@@ -134,6 +135,11 @@ const DrawerList = ({ open, onClose }: DrawerListProps) => {
 				icon: <IconDeviceDesktopAnalytics />
 			},
 			{
+				title: 'components.global.drawerList.links.admin.link.publication_requests',
+				href: '/admin/publication-requests',
+				icon: <IconArticle/>
+			},
+			{
 				title: 'components.global.drawerList.links.admin.link.stages',
 				href: '/admin/stages',
 				icon: <IconPodium />
@@ -165,6 +171,11 @@ const DrawerList = ({ open, onClose }: DrawerListProps) => {
 				title: 'components.global.drawerList.links.director.link.requests',
 				href: '/director/requests',
 				icon: <IconQuestionMark />
+			},
+			{
+				title: 'components.global.drawerList.links.admin.link.publication_requests',
+				href: '/director/publication-requests',
+				icon: <IconArticle/>
 			},
 			{
 				title: 'components.global.drawerList.links.director.link.allocation_requests',

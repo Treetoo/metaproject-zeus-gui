@@ -203,10 +203,21 @@ const ProjectPublications = ({ id }: ProjectPublicationsProps) => {
 						sortable: true
 					},
 					{
+						accessor: 'status',
+						title: 'Status',
+						width: 120,
+						sortable: true,
+						render: (publication: Publication) => {
+							const status = publication.status;
+							const color = status === 'approved' ? 'green' : status === 'rejected' ? 'red' : 'orange';
+							return <Badge color={color}>{status}</Badge>;
+						}
+					},
+					{
 						accessor: 'actions',
 						title: t('components.project.publications.index.columns.actions'),
 						textAlign: 'center',
-						width: 160,
+						width: 80,
 						hidden: !permissions.includes('edit_publications'),
 						render: (publication: Publication) => (
 							<Group gap={4} justify="space-between" wrap="nowrap">
