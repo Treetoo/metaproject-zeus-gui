@@ -10,7 +10,7 @@ import { approvePublication, rejectPublication } from '@/modules/publication/api
 
 // Validation schema for approval
 const approvalSchema = z.object({
-	weight: z.number().min(0).max(100).optional()
+	weight: z.number().int().min(1).max(3).optional()
 });
 
 type ApprovalFormData = z.infer<typeof approvalSchema>;
@@ -140,14 +140,6 @@ export const PublicationApprovalDetail = ({
 						<Text>{publication.uniqueId}</Text>
 					</Box>
 				</Group>
-
-				<Box>
-					<Text size="sm" c="dimmed" mb={4}>Project</Text>
-					<Badge size="lg" variant="light">
-						Project ID: {publication.projectId}
-						{publication.projectName && ` - ${publication.projectName}`}
-					</Badge>
-				</Box>
 
 				<Box>
 					<Text size="sm" c="dimmed" mb={4}>Status</Text>

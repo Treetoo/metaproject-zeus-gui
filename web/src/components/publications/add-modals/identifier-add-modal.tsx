@@ -9,7 +9,7 @@ import { useMyActiveProjectsQuery } from '@/modules/project/queries';
 
 const schema = z.object({
 	identifier: z.string().min(1, "Identifier is required"),
-	projectId: z.string({ required_error: "Please select a project" }).min(1, "Please select a project")
+	projectId: z.number({ required_error: "Please select a project" }).min(1, "Please select a project")
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -30,6 +30,7 @@ const TYPE_OPTIONS = [
 	{ value: 'pubmed', label: 'PMID' },
 	{ value: 'isbn', label: 'ISBN' },
 	{ value: 'nma', label: 'NMA' },
+	{ value: 'arxiv', label: 'arXiv' },
 ];
 
 export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, placeholder, projectId: activeProjectId }: IdentifierAddModalProps) {
@@ -56,12 +57,15 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 
 	useEffect(() => {
 		if (projectOptions.length === 1) {
-			form.setValue('projectId', projectOptions[0].value, { shouldValidate: true });
+			form.setValue('projectId', Number(projectOptions[0].value), { shouldValidate: true });
 		}
 	}, [projectOptions, form]);
 
 	const handleClose = () => {
 		form.reset();
+		if (projectOptions.length === 1) {
+			form.setValue('projectId', Number(projectOptions[0].value), { shouldValidate: true });
+		}
 		setSelectedType('unknown');
 		setForceTypeChange(false);
 		onClose();
@@ -98,6 +102,7 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 			handleClose();
 		} catch (e: any) {
 			const status = e?.status ||
+
 				e?.response?.status ||
 				e?.data?.status;
 
@@ -150,8 +155,8 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 									label="Select project"
 									placeholder={isProjectsPending ? "Loading projects..." : "Choose a project"}
 									data={projectOptions}
-									value={field.value}
-									onChange={(val) => field.onChange(val ?? '')}
+									value={field.value ? String(field.value) : null}
+									onChange={(val) => field.onChange(val ? Number(val) : undefined)}
 									error={fieldState.error?.message}
 									required
 									searchable

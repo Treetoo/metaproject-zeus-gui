@@ -20,7 +20,7 @@ export const manualPublicationSchema = z.object({
 	authors: z.string(),
 	journal: z.string(),
 	year: z.number().min(0).max(2200),
-	project: z.object({ projectId: z.number() }).optional(),
+	projectId: z.number().optional(),
 	url: z.string().url("Please enter a valid URL")
 });
 

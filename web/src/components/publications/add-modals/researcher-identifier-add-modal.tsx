@@ -201,7 +201,6 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Res
 								<Text>
 								</Text>
 								<Button
-									color={console.log("hello from button")} //"}teal"
 									onClick={handleSubmitSelected}
 									loading={isSubmitting}
 									disabled={selectedWorks.length === 0}
