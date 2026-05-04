@@ -4,6 +4,7 @@ export type User = {
 	readonly externalId: string;
 	readonly username: string;
 	readonly name: string;
+	readonly orcid?: string;
 };
 
 export type UserInfo = {
@@ -15,4 +16,5 @@ export type UserInfo = {
 	email: string;
 	username: string;
 	role?: string;
+	orcid?: string;
 };
