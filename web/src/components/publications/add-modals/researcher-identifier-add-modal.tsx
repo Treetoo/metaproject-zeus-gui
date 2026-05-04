@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,6 +9,7 @@ import type { Publication } from '@/modules/publication/model';
 import { createMyPublication } from '@/modules/publication/api/my-publications';
 import { searchByResearcherId } from '@/modules/publication/api/search-by-researcher-id';
 import { useMyActiveProjectsQuery } from '@/modules/project/queries';
+import { getMyOrcid } from '@/modules/user/api/my-orcid.ts'
 
 const schema = z.object({
 	identifier: z.string(),
@@ -25,6 +26,12 @@ interface ResearcherIdentifierAddModalProps {
 }
 
 export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: ResearcherIdentifierAddModalProps) {
+	useEffect(() => {
+		if (opened) {
+			getMyOrcid().then(data => setInputId(data.orcid));
+		}
+	}, [opened]);
+
 	const [inputId, setInputId] = useState('');
 	const [works, setWorks] = useState<Publication[]>([]);
 	const [selectedWorks, setSelectedWorks] = useState<Publication[]>([]);
@@ -38,6 +45,7 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Res
 		}
 	});
 
+
 	const { data: myProjects, isPending: isProjectsPending } = useMyActiveProjectsQuery();
 
 	const projectOptions = useMemo(() => {
@@ -50,7 +58,6 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Res
 
 
 	const handleClose = () => {
-		setInputId('');
 		setWorks([]);
 		setSelectedWorks([]);
 		onClose();
