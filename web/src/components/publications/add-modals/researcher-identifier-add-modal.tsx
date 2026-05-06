@@ -28,7 +28,7 @@ interface ResearcherIdentifierAddModalProps {
 export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: ResearcherIdentifierAddModalProps) {
 	useEffect(() => {
 		if (opened) {
-			getMyOrcid().then(data => setInputId(data.orcid));
+			getMyOrcid().then(data => setInputId(data.orcid ?? ''));
 		}
 	}, [opened]);
 

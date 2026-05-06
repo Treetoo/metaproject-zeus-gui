@@ -182,6 +182,7 @@ const App = () => {
 					<Route path="allocations" element={<AdminAllocations />} />
 					<Route path="allocation-requests" element={<AllocationRequestsList />} />
 					<Route path="allocations/:allocationId" element={<AllocationRequestDetail />} />
+					<Route path="publication-requests" element={<PublicationRequests/>} />
 				</Route>
 				<Route path="/director" element={<AdminRouteGuard />}>
 					<Route index element={<AdminLinkPage />} />
@@ -196,6 +197,7 @@ const App = () => {
 					<Route path="allocations" element={<AdminAllocations />} />
 					<Route path="allocation-requests" element={<AllocationRequestsList />} />
 					<Route path="allocations/:allocationId" element={<AllocationRequestDetail />} />
+					<Route path="publication-requests" element={<PublicationRequests/>} />
 				</Route>
 				<Route path="*" element={<NotFound />} />
 			</Route>
