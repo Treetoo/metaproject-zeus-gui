@@ -261,7 +261,7 @@
     "index": {
       "title": "Sign in",
       "buttons": {
-        "MUNI": "Sign in with MUNI"
+        "eINFRA": "Sign in with e-INFRA CZ"
       }
     },
     "ProjectRequests": {
