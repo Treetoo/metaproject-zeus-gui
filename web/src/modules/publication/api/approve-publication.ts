@@ -1,20 +1,23 @@
 import { Method } from '@/modules/api/model';
 import { request } from '@/modules/api/request';
 
-export type ApprovePublicationRequest = {
+export type ApprovePublicationDto = {
 	publicationId: number;
 	weight?: number;
+	reviewerNote?: string;
 };
 
-export const approvePublication = async ({ publicationId, weight }: ApprovePublicationRequest) => {
-	await request(`/publications/approval/${publicationId}/approve`, {
+export const approvePublication = async (data: ApprovePublicationDto) => {
+	data.weight = data.weight ?? 1;
+	await request(`/publications/approval/${data.publicationId}/approve`, {
 		method: Method.POST,
-		json: { weight: weight ?? 1 }
+		json: data
 	});
 };
 
-export const rejectPublication = async ({ publicationId }: ApprovePublicationRequest) => {
-	await request(`/publications/approval/${publicationId}/reject`, {
-		method: Method.POST
+export const rejectPublication = async (data: ApprovePublicationDto) => {
+	await request(`/publications/approval/${data.publicationId}/reject`, {
+		method: Method.POST,
+		json: data
 	});
 };

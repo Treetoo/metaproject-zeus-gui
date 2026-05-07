@@ -1,4 +1,4 @@
-import z, { number } from 'zod';
+import z from 'zod';
 
 // search by DOI
 export const searchByPubIdSchema = z.object({
@@ -21,7 +21,7 @@ export const manualPublicationSchema = z.object({
 	journal: z.string(),
 	year: z.number().nullable(),
 	projectId: z.number().optional(),
-	url: z.string().url("Please enter a valid URL")
+	url: z.string().url('Please enter a valid URL')
 });
 
 export type ManualPublicationSchema = z.infer<typeof manualPublicationSchema>;

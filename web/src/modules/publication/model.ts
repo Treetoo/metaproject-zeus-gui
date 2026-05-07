@@ -3,7 +3,7 @@ export type ResearcherIdType = 'orcid' | 'res_openalex' | 'unknown';
 
 export type Project = {
 	projectId: number;
-}
+};
 
 export type Publication = {
 	id?: number;
@@ -15,6 +15,7 @@ export type Publication = {
 	uniqueId?: string;
 	source?: PublicationSource;
 	status: 'pending' | 'approved' | 'rejected';
+	reviewerNote?: string | null;
 
 	createdAt?: EpochTimeStamp;
 	// optional flag from backend indicating the current user is the owner

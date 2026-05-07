@@ -1,33 +1,22 @@
 import { useState } from 'react';
-import { Modal, Stack, Text, Group, Button, NumberInput, Badge, Box, Divider, Anchor } from '@mantine/core';
+import { Modal, Stack, Text, Group, Button, NumberInput, Badge, Box, Divider, Anchor, Textarea } from '@mantine/core';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { notifications } from '@mantine/notifications';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Publication } from '@/modules/publication/model';
+
 import { approvePublication, rejectPublication } from '@/modules/publication/api/approve-publication';
+import { type ApprovalFormData, approvalSchema } from '@/modules/publication/approval-form';
+import { type Publication } from '@/modules/publication/model';
 
 // Validation schema for approval
-const approvalSchema = z.object({
-	weight: z.number().int().min(1).max(3).optional()
-});
-
-type ApprovalFormData = z.infer<typeof approvalSchema>;
-
-interface PendingPublication extends Publication {
-	status: 'pending' | 'approved' | 'rejected';
-	projectId: number;
-	projectName?: string;
-}
-
-interface PublicationApprovalDetailProps {
+type PublicationApprovalDetailProps = {
 	opened: boolean;
 	onClose: () => void;
-	publication: PendingPublication | null;
+	publication: Publication | null;
 	onApproved?: () => void;
 	onRejected?: () => void;
-}
+};
 
 export const PublicationApprovalDetail = ({
 	opened,
@@ -41,17 +30,19 @@ export const PublicationApprovalDetail = ({
 
 	const form = useForm<ApprovalFormData>({
 		resolver: zodResolver(approvalSchema),
-		defaultValues: { weight: 1 }
+		defaultValues: { weight: 1, reviewerNote: publication?.reviewerNote ?? '' }
 	});
 
-	if (!publication) { return null; }
+	if (!publication) {
+		return null;
+	}
 
 	const handleApprove = async (data: ApprovalFormData) => {
 		if (!publication.id) return;
 
 		setIsSubmitting(true);
 		try {
-			await approvePublication({ publicationId: publication.id, weight: data.weight || 1 });
+			await approvePublication({ ...data, publicationId: publication.id });
 
 			notifications.show({
 				message: 'Publication approved successfully',
@@ -75,9 +66,10 @@ export const PublicationApprovalDetail = ({
 	const handleReject = async () => {
 		if (!publication.id) return;
 
+		const data = form.getValues();
 		setIsSubmitting(true);
 		try {
-			await rejectPublication({ publicationId: publication.id });
+			await rejectPublication({ ...data, publicationId: publication.id });
 
 			notifications.show({
 				message: 'Publication rejected',
@@ -98,22 +90,22 @@ export const PublicationApprovalDetail = ({
 	};
 
 	return (
-		<Modal
-			opened={opened}
-			onClose={onClose}
-			title="Review Publication"
-			size="lg"
-			centered
-		>
+		<Modal opened={opened} onClose={onClose} title="Review Publication" size="lg" centered>
 			<Stack gap="md">
 				{/* Publication Details Section */}
 				<Box>
-					<Text size="sm" c="dimmed" mb={4}>Title</Text>
-					<Text fw={500} size="lg">{publication.title}</Text>
+					<Text size="sm" c="dimmed" mb={4}>
+						Title
+					</Text>
+					<Text fw={500} size="lg">
+						{publication.title}
+					</Text>
 				</Box>
 
 				<Box>
-					<Text size="sm" c="dimmed" mb={4}>Link</Text>
+					<Text size="sm" c="dimmed" mb={4}>
+						Link
+					</Text>
 					<Anchor href={publication.url} target="_blank" rel="noopener noreferrer" size="lg">
 						{publication.url}
 					</Anchor>
@@ -121,29 +113,41 @@ export const PublicationApprovalDetail = ({
 
 				<Group grow>
 					<Box>
-						<Text size="sm" c="dimmed" mb={4}>Authors</Text>
+						<Text size="sm" c="dimmed" mb={4}>
+							Authors
+						</Text>
 						<Text>{publication.authors}</Text>
 					</Box>
 					<Box>
-						<Text size="sm" c="dimmed" mb={4}>Year</Text>
+						<Text size="sm" c="dimmed" mb={4}>
+							Year
+						</Text>
 						<Text>{publication.year}</Text>
 					</Box>
 				</Group>
 
 				<Group grow>
 					<Box>
-						<Text size="sm" c="dimmed" mb={4}>Journal</Text>
+						<Text size="sm" c="dimmed" mb={4}>
+							Journal
+						</Text>
 						<Text>{publication.journal}</Text>
 					</Box>
 					<Box>
-						<Text size="sm" c="dimmed" mb={4}>DOI/Unique ID</Text>
+						<Text size="sm" c="dimmed" mb={4}>
+							DOI/Unique ID
+						</Text>
 						<Text>{publication.uniqueId}</Text>
 					</Box>
 				</Group>
 
 				<Box>
-					<Text size="sm" c="dimmed" mb={4}>Status</Text>
-					<Badge color="yellow" size="lg">{publication.status}</Badge>
+					<Text size="sm" c="dimmed" mb={4}>
+						Status
+					</Text>
+					<Badge color="yellow" size="lg">
+						{publication.status}
+					</Badge>
 				</Box>
 
 				<Divider my="sm" />
@@ -157,15 +161,24 @@ export const PublicationApprovalDetail = ({
 							min={0}
 							max={100}
 							value={form.watch('weight')}
-							onChange={(value) => form.setValue('weight', value, { shouldValidate: true })}
+							onChange={value => form.setValue('weight', value as number, { shouldValidate: true })}
 							error={form.formState.errors.weight?.message}
 						/>
+
+						<Textarea
+							rows={4}
+							autosize
+							maxRows={8}
+							label="Reviewers note"
+							description="Explains why the publication was not approved"
+							value={form.watch('reviewerNote')}
+							onChange={event =>
+								form.setValue('reviewerNote', event.currentTarget.value, { shouldValidate: true })
+							}
+							error={form.formState.errors.reviewerNote?.message}
+						/>
 						<Group justify="flex-end" mt="md">
-							<Button
-								variant="default"
-								onClick={onClose}
-								disabled={isSubmitting}
-							>
+							<Button variant="default" onClick={onClose} disabled={isSubmitting}>
 								Cancel
 							</Button>
 
@@ -179,12 +192,7 @@ export const PublicationApprovalDetail = ({
 								Reject
 							</Button>
 
-							<Button
-								type="submit"
-								color="green"
-								loading={isSubmitting}
-								disabled={isSubmitting}
-							>
+							<Button type="submit" color="green" loading={isSubmitting} disabled={isSubmitting}>
 								Approve
 							</Button>
 						</Group>

@@ -13,13 +13,14 @@ import { usePublicationRequestsQuery } from '@/modules/publication/queries'; // 
 import { getSortQuery } from '@/modules/api/sorting/utils';
 import { getCurrentRole } from '@/modules/auth/methods/getCurrentRole';
 import { Role } from '@/modules/user/role';
+
 import { PublicationApprovalDetail } from './detail';
 
-interface PendingPublication extends Publication {
+type PendingPublication = {
 	status: 'pending' | 'approved' | 'rejected';
 	projectId: number;
 	projectName: string;
-}
+} & Publication;
 
 const PublicationRequests = () => {
 	const { t } = useTranslation();
@@ -35,10 +36,7 @@ const PublicationRequests = () => {
 		direction: 'asc'
 	});
 
-	const sortQuery = useMemo(
-		() => getSortQuery(sortStatus.columnAccessor, sortStatus.direction),
-		[sortStatus]
-	);
+	const sortQuery = useMemo(() => getSortQuery(sortStatus.columnAccessor, sortStatus.direction), [sortStatus]);
 
 	const handleRowClick = (publication: PendingPublication) => {
 		setSelectedPub(publication);
@@ -51,12 +49,12 @@ const PublicationRequests = () => {
 		await queryClient.invalidateQueries({
 			queryKey: ['publications', 'requests']
 		});
-	}
+	};
 
 	const handleCloseDetail = () => {
 		setDetailOpen(false);
 		setSelectedPub(null);
-	}
+	};
 
 	const { data, isPending, refetch } = usePublicationRequestsQuery({ page, limit }, sortQuery);
 
@@ -76,7 +74,7 @@ const PublicationRequests = () => {
 			/>
 			<Title order={2}>{t('routes.PublicationRequests.title')}</Title>
 
-			<Box mt={15} >
+			<Box mt={15}>
 				<DataTable
 					height={500}
 					withTableBorder
@@ -84,18 +82,18 @@ const PublicationRequests = () => {
 					records={records}
 					totalRecords={totalRecords}
 					page={page}
-					onPageChange={async (p) => {
+					onPageChange={async p => {
 						setPage(p);
 						await refetch();
 					}}
 					recordsPerPage={limit}
 					recordsPerPageOptions={PUBLICATION_PAGE_SIZES}
-					onRecordsPerPageChange={async (l) => {
+					onRecordsPerPageChange={async l => {
 						setLimit(l);
 						await refetch();
 					}}
 					sortStatus={sortStatus}
-					onSortStatusChange={async (s) => {
+					onSortStatusChange={async s => {
 						setPage(1);
 						setSortStatus(s as DataTableSortStatus<Publication>);
 						await refetch();
@@ -105,7 +103,7 @@ const PublicationRequests = () => {
 							accessor: 'title',
 							title: t('routes.PublicationRequests.table.publication_title'),
 							sortable: true,
-							render: (publication) => (
+							render: publication => (
 								<Link
 									to={`${prefix}/publication-requests/${publication.id}`}
 									style={{ textDecoration: 'none', color: 'inherit' }}
@@ -137,18 +135,18 @@ const PublicationRequests = () => {
 							title: t('routes.PublicationRequests.table.createdAt'),
 							sortable: true,
 							width: 180,
-							render: ({ createdAt }) => createdAt ? new Date(createdAt).toLocaleString() : 'N/A'
+							render: ({ createdAt }) => (createdAt ? new Date(createdAt).toLocaleString() : 'N/A')
 						},
 						{
 							accessor: 'actions',
 							title: 'actions',
 							width: 100,
 							textAlign: 'right',
-							render: (record) => (
+							render: record => (
 								<Button
 									size="xs"
 									variant="light"
-									onClick={(e) => {
+									onClick={e => {
 										e.stopPropagation();
 										handleRowClick(record as PendingPublication);
 									}}
@@ -167,7 +165,6 @@ const PublicationRequests = () => {
 				onApproved={handleActionComplete}
 				onRejected={handleActionComplete}
 			/>
-
 		</Box>
 	);
 };

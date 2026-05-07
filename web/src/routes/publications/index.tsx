@@ -8,6 +8,7 @@ import { modals } from '@mantine/modals';
 import { IconLibrary } from '@tabler/icons-react';
 import { HTTPError } from 'ky';
 
+import { PublicationDetailModal } from '@/components/publications/publication-detail-modal';
 import { IdentifierAddModal } from '@/components/publications/add-modals/identifier-add-modal';
 import { AddManuallyModal } from '@/components/publications/add-modals/add-manually-modal';
 import { ResearcherIdentifierAddModal } from '@/components/publications/add-modals/researcher-identifier-add-modal';
@@ -22,7 +23,7 @@ import {
 import type { Publication } from '@/modules/publication/model';
 import { useMyActiveProjectsQuery } from '@/modules/project/queries';
 
-type ModalType = 'manual' | 'pubId' | 'researcherId' | 'assign' | null;
+type ModalType = 'manual' | 'pubId' | 'researcherId' | 'assign' | 'detail' | null;
 
 const MyPublicationsPage = () => {
 	const [activeModal, setActiveModal] = useState<ModalType>(null);
@@ -41,6 +42,7 @@ const MyPublicationsPage = () => {
 	const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 	const [publicationToAssign, setPublicationToAssign] = useState<Publication | null>(null);
 	const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
+	const [viewingPublication, setViewingPublication] = useState<Publication | null>(null);
 
 	const isHttpError = (value: unknown): value is HTTPError => value instanceof HTTPError;
 
@@ -156,13 +158,19 @@ const MyPublicationsPage = () => {
 				onSuccess={handleSuccess}
 			/>
 
+			<PublicationDetailModal
+				opened={activeModal === 'detail'}
+				onClose={closeModal}
+				publication={viewingPublication}
+			/>
+
 			<Modal opened={isAssignModalOpen} onClose={closeAssignModal} title="Assign publication to project" centered>
 				<form onSubmit={handleAssignSubmit}>
 					<Stack>
 						{!isProjectsPending && projectOptions.length === 0 ? (
 							<Text c="dimmed" size="sm">
-								You don't have any active projects to assign publications to. Please create a project
-								first or wait for your project request to be approved.
+								You don&apos;t have any active projects to assign publications to. Please create a
+								project first or wait for your project request to be approved.
 							</Text>
 						) : (
 							<Select
@@ -228,6 +236,11 @@ const MyPublicationsPage = () => {
 				onSortStatusChange={async (s: DataTableSortStatus<Publication>) => {
 					setSort(s);
 					await refetch();
+				}}
+				onRowClick={({ event, record }) => {
+					if ((event.target as HTMLElement).closest('button')) return;
+					setViewingPublication(record);
+					setActiveModal('detail');
 				}}
 				columns={[
 					{ accessor: 'title', title: 'Title' },
