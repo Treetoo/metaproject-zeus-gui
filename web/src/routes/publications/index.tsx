@@ -1,4 +1,4 @@
-import { Box, Button, Group, Modal, NumberInput, Select, Stack, Text, TextInput, Title, Flex, Badge } from '@mantine/core';
+import { Box, Button, Group, Modal, Select, Stack, Text, Title, Badge } from '@mantine/core';
 import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
@@ -7,13 +7,18 @@ import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
 import { IconLibrary } from '@tabler/icons-react';
 import { HTTPError } from 'ky';
+
 import { IdentifierAddModal } from '@/components/publications/add-modals/identifier-add-modal';
 import { AddManuallyModal } from '@/components/publications/add-modals/add-manually-modal';
-import { ResearcherIdentifierAddModal } from '@/components/publications/add-modals/researcher-identifier-add-modal'
+import { ResearcherIdentifierAddModal } from '@/components/publications/add-modals/researcher-identifier-add-modal';
 import PageBreadcrumbs from '@/components/global/page-breadcrumbs';
 import { PUBLICATION_PAGE_SIZES } from '@/modules/publication/constants';
 import { getSortQuery } from '@/modules/api/sorting/utils';
-import { useAssignMyPublicationMutation, useDeleteMyPublicationMutation, useMyPublicationsQuery } from '@/modules/publication/my-queries';
+import {
+	useAssignMyPublicationMutation,
+	useDeleteMyPublicationMutation,
+	useMyPublicationsQuery
+} from '@/modules/publication/my-queries';
 import type { Publication } from '@/modules/publication/model';
 import { useMyActiveProjectsQuery } from '@/modules/project/queries';
 
@@ -42,7 +47,7 @@ const MyPublicationsPage = () => {
 	const closeModal = () => {
 		setActiveModal(null);
 		setPublicationToAssign(null);
-	}
+	};
 
 	const handleSuccess = async () => {
 		await refetch();
@@ -86,11 +91,17 @@ const MyPublicationsPage = () => {
 			await refetch();
 		} catch (error: unknown) {
 			if (isHttpError(error) && error.response.status === 404) {
-				notifications.show({ message: 'You do not have permission to add publications to that project.', color: 'yellow' });
+				notifications.show({
+					message: 'You do not have permission to add publications to that project.',
+					color: 'yellow'
+				});
 				return;
 			}
 			if (isHttpError(error) && error.response.status === 403) {
-				notifications.show({ message: 'You do not have permission to add publications to that project.', color: 'yellow' });
+				notifications.show({
+					message: 'You do not have permission to add publications to that project.',
+					color: 'yellow'
+				});
 				return;
 			}
 
@@ -122,7 +133,10 @@ const MyPublicationsPage = () => {
 		<Box>
 			<AddManuallyModal
 				opened={activeModal === 'manual'}
-				onClose={() => { setEditingPublication(null); closeModal(); }}
+				onClose={() => {
+					setEditingPublication(null);
+					closeModal();
+				}}
 				onSuccess={handleSuccess}
 				editPublication={editingPublication}
 			/>
@@ -142,19 +156,18 @@ const MyPublicationsPage = () => {
 				onSuccess={handleSuccess}
 			/>
 
-
 			<Modal opened={isAssignModalOpen} onClose={closeAssignModal} title="Assign publication to project" centered>
 				<form onSubmit={handleAssignSubmit}>
 					<Stack>
 						{!isProjectsPending && projectOptions.length === 0 ? (
 							<Text c="dimmed" size="sm">
-								You don't have any active projects to assign publications to.
-								Please create a project first or wait for your project request to be approved.
+								You don't have any active projects to assign publications to. Please create a project
+								first or wait for your project request to be approved.
 							</Text>
 						) : (
 							<Select
 								label="Select project"
-								placeholder={isProjectsPending ? "Loading projects..." : "Choose a project"}
+								placeholder={isProjectsPending ? 'Loading projects...' : 'Choose a project'}
 								data={projectOptions}
 								value={assignProjectId}
 								onChange={setAssignProjectId}
@@ -165,7 +178,9 @@ const MyPublicationsPage = () => {
 							/>
 						)}
 						<Group justify="flex-end">
-							<Button variant="default" type="button" onClick={closeAssignModal}>Cancel</Button>
+							<Button variant="default" type="button" onClick={closeAssignModal}>
+								Cancel
+							</Button>
 							<Button
 								type="submit"
 								loading={assignMutation.isPending}
@@ -179,11 +194,19 @@ const MyPublicationsPage = () => {
 			</Modal>
 
 			<PageBreadcrumbs links={[{ title: 'Publications', href: '/publications' }]} />
-			<Title order={3}><IconLibrary /> My publications</Title>
+			<Title order={3}>
+				<IconLibrary /> My publications
+			</Title>
 			<Group mt={10} mb={20}>
-				<Button color="teal" onClick={() => setActiveModal('manual')}>Add publication manually</Button>
-				<Button color="blue" onClick={() => setActiveModal('pubId')}>Add by publication ID</Button>
-				<Button color="green" onClick={() => setActiveModal('researcherId')}>Add by reasearcher ID</Button>
+				<Button color="teal" onClick={() => setActiveModal('manual')}>
+					Add publication manually
+				</Button>
+				<Button color="blue" onClick={() => setActiveModal('pubId')}>
+					Add by publication ID
+				</Button>
+				<Button color="green" onClick={() => setActiveModal('researcherId')}>
+					Add by reasearcher ID
+				</Button>
 			</Group>
 			<DataTable
 				withTableBorder
@@ -191,12 +214,21 @@ const MyPublicationsPage = () => {
 				records={data?.data ?? []}
 				totalRecords={data?.metadata?.totalRecords}
 				page={page}
-				onPageChange={async (p: number) => { setPage(p); await refetch(); }}
+				onPageChange={async (p: number) => {
+					setPage(p);
+					await refetch();
+				}}
 				recordsPerPage={limit}
 				recordsPerPageOptions={PUBLICATION_PAGE_SIZES}
-				onRecordsPerPageChange={async (l: number) => { setLimit(l); await refetch(); }}
+				onRecordsPerPageChange={async (l: number) => {
+					setLimit(l);
+					await refetch();
+				}}
 				sortStatus={sort}
-				onSortStatusChange={async (s: DataTableSortStatus<Publication>) => { setSort(s); await refetch(); }}
+				onSortStatusChange={async (s: DataTableSortStatus<Publication>) => {
+					setSort(s);
+					await refetch();
+				}}
 				columns={[
 					{ accessor: 'title', title: 'Title' },
 					{ accessor: 'authors', title: 'Authors' },
@@ -207,23 +239,41 @@ const MyPublicationsPage = () => {
 						title: 'Status',
 						width: 110,
 						render: (pub: Publication) => {
-							const color = pub.status === 'approved' ? 'green' : pub.status === 'rejected' ? 'red' : 'orange';
+							const color =
+								pub.status === 'approved' ? 'green' : pub.status === 'rejected' ? 'red' : 'orange';
 							return <Badge color={color}>{pub.status}</Badge>;
 						}
 					},
 					{
-						accessor: 'actions', title: '', width: 280, textAlign: 'right',
+						accessor: 'actions',
+						title: '',
+						width: 280,
+						textAlign: 'right',
 						render: (pub: Publication) => (
 							<Group gap={8} justify="flex-end">
-								<Button size="xs" variant="light" onClick={() => openAssignModal(pub)}>Assign to project</Button>
-								<Button size="xs" variant="blue" onClick={() => { setEditingPublication(pub); setActiveModal('manual'); }}>Edit</Button>
-								<Button size="xs" color="red" variant="light" onClick={() => deletePublication(pub)}>Delete</Button>
+								<Button size="xs" variant="light" onClick={() => openAssignModal(pub)}>
+									Assign to project
+								</Button>
+								<Button
+									size="xs"
+									variant="blue"
+									disabled={pub.status === 'approved'}
+									onClick={() => {
+										setEditingPublication(pub);
+										setActiveModal('manual');
+									}}
+								>
+									Edit
+								</Button>
+								<Button size="xs" color="red" variant="light" onClick={() => deletePublication(pub)}>
+									Delete
+								</Button>
 							</Group>
 						)
 					}
 				]}
 			/>
-		</Box >
+		</Box>
 	);
 };
 
