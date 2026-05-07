@@ -5,15 +5,16 @@ import { z } from 'zod';
 import { DataTable } from 'mantine-datatable';
 import { Modal, Button, Group, TextInput, Stack, Select, Text } from '@mantine/core'
 import { notifications } from '@mantine/notifications';
-import type { Publication } from '@/modules/publication/model';
+import { type ResearcherIdType, type Publication } from '@/modules/publication/model';
+import { type CreateMyPublicationRequest } from '@/modules/publication/api/my-publications'
 import { createMyPublication } from '@/modules/publication/api/my-publications';
 import { searchByResearcherId } from '@/modules/publication/api/search-by-researcher-id';
 import { useMyActiveProjectsQuery } from '@/modules/project/queries';
-import { getMyOrcid } from '@/modules/user/api/my-orcid.ts'
+import { getMyOrcid } from '@/modules/user/api/my-orcid';
 
 const schema = z.object({
 	identifier: z.string(),
-	projectId: z.string({ required_error: "Please select a project" }).min(1, "Please select a project")
+	projectId: z.number({ required_error: "Please select a project" }).min(1, "Please select a project")
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -22,16 +23,24 @@ interface ResearcherIdentifierAddModalProps {
 	opened: boolean;
 	onClose: () => void;
 	onSuccess: () => Promise<void>;
-	projectId: number;
 }
 
-export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: ResearcherIdentifierAddModalProps) {
-	useEffect(() => {
-		if (opened) {
-			getMyOrcid().then(data => setInputId(data.orcid ?? ''));
-		}
-	}, [opened]);
+type TypeOption = {
+	value: ResearcherIdType,
+	label: string
+}
+const TYPE_OPTIONS: TypeOption[] = [
+	{ value: 'orcid', label: 'ORCID iD' },
+	{ value: 'res_openalex', label: 'OpenAlex researcher ID' },
+	{ value: 'unknown', label: 'Auto Detect' },
+];
 
+
+export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: ResearcherIdentifierAddModalProps) {
+	const { data: myProjects, isPending: isProjectsPending } = useMyActiveProjectsQuery();
+
+	const [selectedType, setSelectedType] = useState<ResearcherIdType>('unknown');
+	const [forceTypeChange, setForceTypeChange] = useState(false);
 	const [inputId, setInputId] = useState('');
 	const [works, setWorks] = useState<Publication[]>([]);
 	const [selectedWorks, setSelectedWorks] = useState<Publication[]>([]);
@@ -40,13 +49,21 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Res
 	const form = useForm<FormValues>({
 		resolver: zodResolver(schema),
 		defaultValues: {
-			identifier: '',
-			projectId: ''
+			identifier: ''
 		}
 	});
 
 
-	const { data: myProjects, isPending: isProjectsPending } = useMyActiveProjectsQuery();
+	useEffect(() => {
+		if (opened) {
+			getMyOrcid().then(data => setInputId(data.orcid ?? ''));
+		}
+
+		if (myProjects && myProjects.length === 1) {
+			form.setValue('projectId', Number(myProjects[0].id), { shouldValidate: true });
+		}
+	}, [opened]);
+
 
 	const projectOptions = useMemo(() => {
 		if (!myProjects || !Array.isArray(myProjects)) return [];
@@ -58,8 +75,11 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Res
 
 
 	const handleClose = () => {
+		form.reset();
 		setWorks([]);
 		setSelectedWorks([]);
+		setSelectedType('unknown');
+		setForceTypeChange(false);
 		onClose();
 	};
 
@@ -79,15 +99,32 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Res
 			return;
 		}
 
+		if (forceTypeChange && selectedType === 'unknown') {
+			notifications.show({
+				message: 'Previous attempt failed. Please select a specific type from the dropdown or cancel.',
+				color: 'orange'
+			});
+			return;
+		}
+
 		setIsSearching(true);
 		try {
-			const result = await searchByResearcherId(trimmed);
+			const result = await searchByResearcherId(trimmed, selectedType);
 			setWorks(result?.works || []);
 			if (!result?.works?.length) {
 				notifications.show({ message: 'No publications found for this ORCID', color: 'blue' });
 			}
-		} catch (error) {
-			notifications.show({ message: 'Failed to search by ORCID', color: 'red' });
+		} catch (e: any) {
+			const status = e?.status ||
+				e?.response?.status ||
+				e?.data?.status;
+
+			if (status === 400) {
+				setForceTypeChange(true);
+				notifications.show({ message: 'Could not detect publication type. Please select a publication type and try again', color: 'red' });
+			} else {
+				notifications.show({ message: 'Unexpected error, please try again later', color: 'red' });
+			}
 		} finally {
 			setIsSearching(false);
 		}
@@ -97,14 +134,20 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Res
 		if (selectedWorks.length === 0) return;
 
 		const worksWithUniqueId = selectedWorks.filter((w: Publication) => w.uniqueId);
+
+		if (!projectId) {
+			notifications.show({ message: 'You need to select a project', color: 'yellow' });
+			return;
+		}
+
 		if (worksWithUniqueId.length === 0) {
-			notifications.show({ message: 'Selected publications have no DOI', color: 'yellow' });
+			notifications.show({ message: 'Selected publications have no ID', color: 'yellow' });
 			return;
 		}
 
 		if (worksWithUniqueId.length < selectedWorks.length) {
 			notifications.show({
-				message: `${selectedWorks.length - worksWithUniqueId.length} publication(s) skipped (no DOI)`,
+				message: `${selectedWorks.length - worksWithUniqueId.length} publication(s) skipped: no publication ID`,
 				color: 'yellow'
 			});
 		}
@@ -115,9 +158,8 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Res
 
 		for (const work of worksWithUniqueId) {
 			try {
-				work.source = "doi";
-				work.project = { projectId };
-				await createMyPublication(work)
+				const pubReq = { ...work, project: { projectId } } as CreateMyPublicationRequest;
+				await createMyPublication(pubReq);
 				successCount++;
 			} catch (e) {
 				errorCount++;
@@ -139,6 +181,7 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Res
 			});
 		}
 		setIsSubmitting(false);
+		handleClose();
 	})
 
 	return (
@@ -153,6 +196,18 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Res
 							onChange={(e) => setInputId(e.currentTarget.value)}
 							style={{ flex: 1 }}
 						/>
+
+						<Select
+							label="Type"
+							data={TYPE_OPTIONS}
+							value={selectedType}
+							onChange={(value) => {
+								setSelectedType(value as ResearcherIdType);
+								if (value !== 'unknown') setForceTypeChange(false);
+							}}
+							error={forceTypeChange && selectedType === 'unknown' ? 'Selection required' : false}
+						/>
+
 						<Button
 							onClick={handleSearchId}
 							loading={isSearching}
@@ -170,8 +225,8 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Res
 								label="Select project"
 								placeholder={isProjectsPending ? "Loading projects..." : "Choose a project"}
 								data={projectOptions}
-								value={field.value}
-								onChange={(val) => field.onChange(val ?? '')}
+								value={field.value ? String(field.value) : null}
+								onChange={(val) => field.onChange(val ? Number(val) : undefined)}
 								error={fieldState.error?.message}
 								required
 								searchable
@@ -193,7 +248,6 @@ export function ResearcherIdentifierAddModal({ opened, onClose, onSuccess }: Res
 								selectedRecords={selectedWorks}
 								onSelectedRecordsChange={setSelectedWorks}
 								idAccessor='uniqueId'
-								selectable
 								highlightOnHover
 								onRowClick={({ record }) => toggleRecord(record)}
 								columns={[

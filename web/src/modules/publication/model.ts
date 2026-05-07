@@ -1,3 +1,6 @@
+export type PublicationSource = 'doi' | 'manual' | 'arxiv' | 'nma' | 'isbn' | 'pubmed' | 'pub_openalex' | 'unknown';
+export type ResearcherIdType = 'orcid' | 'res_openalex' | 'unknown';
+
 export type Project = {
 	projectId: number;
 }
@@ -10,9 +13,10 @@ export type Publication = {
 	year: number;
 	url: string;
 	uniqueId?: string;
-	project?: Project;
-	source?: 'doi' | 'manual' | 'ark' | 'nma' | 'isbn' | 'issn' | 'handle';
+	source?: PublicationSource;
 	status: 'pending' | 'approved' | 'rejected';
+
+	createdAt?: EpochTimeStamp;
 	// optional flag from backend indicating the current user is the owner
 	isOwner?: boolean;
 };

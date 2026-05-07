@@ -33,7 +33,7 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 
 	const isEditMode = !!editPublication;
 
-	const addForm = useForm({
+	const createForm = () => useForm<ManualPublicationSchema>({
 		resolver: zodResolver(manualPublicationSchema),
 		defaultValues: isEditMode
 			? {
@@ -42,8 +42,16 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 				year: editPublication.year,
 				journal: editPublication.journal,
 				url: editPublication.url,
-			} : {}
+			} : {
+				title: '',
+				authors: '',
+				year: undefined,
+				journal: '',
+				url: '',
+				projectId: defaultProjectId ? Number(defaultProjectId) : undefined
+			}
 	});
+	let addForm = createForm();
 
 	useEffect(() => {
 		if (editPublication) {
@@ -55,34 +63,41 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 				url: editPublication.url,
 			});
 		}
-		if (!isEditMode && defaultProjectId) {
-			const currentProjectId = addForm.getValues('projectId');
-			if (!currentProjectId) {
-				addForm.setValue('projectId', Number(defaultProjectId), { shouldValidate: true });
-			}
+
+		if (projectOptions.length === 1) {
+			addForm.setValue('projectId', Number(projectOptions[0].value), { shouldValidate: true });
 		}
-	}, [defaultProjectId, isEditMode, addForm]);
+
+	}, [projectOptions, editPublication, addForm]);
 
 	const handleClose = () => {
-		addForm.reset();
-		if (!isEditMode) {
-			addForm.setValue('projectId', Number(defaultProjectId), { shouldValidate: true });
-		}
+		addForm.reset({
+			title: '',
+			authors: '',
+			year: null,
+			journal: '',
+			url: '',
+			projectId: !isEditMode && defaultProjectId ? Number(defaultProjectId) : undefined
+		});
 		onClose();
 	};
 
 	const handleSubmit = addForm.handleSubmit(async (values: ManualPublicationSchema) => {
-		if (!isEditMode && !values.projectId) {
-			addForm.setError('projectId', { message: 'Please select a project' });
+		if (values.year === null || values.authors === '' || values.journal === '' || values.title === '') {
+			notifications.show({ message: 'All fields must be set.', color: 'yellow' });
 			return;
 		}
 
 		try {
 			if (isEditMode && editPublication?.id) {
-				await updateMyPublication(editPublication.id, { ...values, source: editPublication.source || 'manual' });
+				await updateMyPublication(editPublication.id, { ...values, year: values.year as number, source: editPublication.source || 'manual' });
 				notifications.show({ message: 'Publication updated', color: 'green' });
 			} else {
-				await createMyPublication({ ...values, source: 'manual', project: { projectId: values.projectId } });
+				if (!values.projectId) {
+					notifications.show({ message: 'Please select a project', color: 'yellow' });
+					return;
+				}
+				await createMyPublication({ ...values, source: 'manual', year: values.year as number, project: { projectId: values.projectId } });
 				notifications.show({ message: 'Publication added', color: 'green' });
 			}
 			onSuccess();
@@ -101,12 +116,10 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 				<Controller
 					control={addForm.control}
 					name="year"
-					render={({ field }: { field: { value: number | undefined; onChange: (value: number | string | null) => void } }) => (
+					render={({ field }: { field: { value: number | null; onChange: (value: number | string | null) => void } }) => (
 						<NumberInput
 							label="Year"
-							min={0}
-							max={2200}
-							value={field.value}
+							value={field.value as number}
 							onChange={(value) => field.onChange(typeof value === 'number' ? value : null)}
 							error={addForm.formState.errors.year?.message}
 							withAsterisk

@@ -1,15 +1,15 @@
-import z from 'zod';
+import z, { number } from 'zod';
 
 // search by DOI
 export const searchByPubIdSchema = z.object({
-	doi: z.string()
+	publicationId: z.string()
 });
 
 export type SearchByPubIdSchema = z.infer<typeof searchByPubIdSchema>;
 
 // search by ORCID
 export const searchByResearcherIdSchema = z.object({
-	orcid: z.string()
+	researcherId: z.string()
 });
 
 export type SearchByResearcherIdSchema = z.infer<typeof searchByResearcherIdSchema>;
@@ -19,7 +19,7 @@ export const manualPublicationSchema = z.object({
 	title: z.string(),
 	authors: z.string(),
 	journal: z.string(),
-	year: z.number().min(0).max(2200),
+	year: z.number().nullable(),
 	projectId: z.number().optional(),
 	url: z.string().url("Please enter a valid URL")
 });

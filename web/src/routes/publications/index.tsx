@@ -7,7 +7,6 @@ import { notifications } from '@mantine/notifications';
 import { modals } from '@mantine/modals';
 import { IconLibrary } from '@tabler/icons-react';
 import { HTTPError } from 'ky';
-import { searchByResearcherId, type OrcidWorkDto } from '@/modules/publication/api/search-by-orcid';
 import { IdentifierAddModal } from '@/components/publications/add-modals/identifier-add-modal';
 import { AddManuallyModal } from '@/components/publications/add-modals/add-manually-modal';
 import { ResearcherIdentifierAddModal } from '@/components/publications/add-modals/researcher-identifier-add-modal'
@@ -15,22 +14,10 @@ import PageBreadcrumbs from '@/components/global/page-breadcrumbs';
 import { PUBLICATION_PAGE_SIZES } from '@/modules/publication/constants';
 import { getSortQuery } from '@/modules/api/sorting/utils';
 import { useAssignMyPublicationMutation, useDeleteMyPublicationMutation, useMyPublicationsQuery } from '@/modules/publication/my-queries';
-import { createMyPublication } from '@/modules/publication/api/my-publications';
-import {
-	manualPublicationSchema,
-	searchByPubIdSchema,
-	searchByResearcherIdSchema,
-	type ManualPublicationSchema,
-	type SearchByPubIdSchema,
-	type SearchByResearcherIdSchema,
-} from '@/modules/publication/form';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import type { Publication } from '@/modules/publication/model';
-import { searchByPubId } from '@/modules/publication/api/search-by-publication-id';
 import { useMyActiveProjectsQuery } from '@/modules/project/queries';
 
-type ModalType = 'manual' | 'pubId' | 'orcid' | 'assign'; // | 'ark' | 'nma' | 'orcid' | 'assign' | null;
+type ModalType = 'manual' | 'pubId' | 'researcherId' | 'assign' | null;
 
 const MyPublicationsPage = () => {
 	const [activeModal, setActiveModal] = useState<ModalType>(null);
@@ -50,16 +37,8 @@ const MyPublicationsPage = () => {
 	const [publicationToAssign, setPublicationToAssign] = useState<Publication | null>(null);
 	const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
 
-	const addForm = useForm<ManualPublicationSchema>({ resolver: zodResolver(manualPublicationSchema) });
-	const pubIdForm = useForm<SearchByPubIdSchema>({ resolver: zodResolver(searchByPubIdSchema), defaultValues: { pubId: '' } });
-	const researcherIdForm = useForm<SearchByResearcherIdSchema>({ resolver: zodResolver(searchByResearcherIdSchema), defaultValues: { pubId: '' } });
 	const isHttpError = (value: unknown): value is HTTPError => value instanceof HTTPError;
 
-
-	const handleAssign = (pub: Publication) => {
-		setPublicationToAssign(pub);
-		setActiveModal('assign');
-	}
 	const closeModal = () => {
 		setActiveModal(null);
 		setPublicationToAssign(null);
@@ -142,7 +121,7 @@ const MyPublicationsPage = () => {
 	return (
 		<Box>
 			<AddManuallyModal
-				opened={activeModal === 'manual' || activeModal === 'edit'}
+				opened={activeModal === 'manual'}
 				onClose={() => { setEditingPublication(null); closeModal(); }}
 				onSuccess={handleSuccess}
 				editPublication={editingPublication}
@@ -157,9 +136,8 @@ const MyPublicationsPage = () => {
 				label="Publication id"
 			/>
 
-			{/*Add by ORCID*/}
 			<ResearcherIdentifierAddModal
-				opened={activeModal === 'orcid'}
+				opened={activeModal === 'researcherId'}
 				onClose={closeModal}
 				onSuccess={handleSuccess}
 			/>
@@ -205,7 +183,7 @@ const MyPublicationsPage = () => {
 			<Group mt={10} mb={20}>
 				<Button color="teal" onClick={() => setActiveModal('manual')}>Add publication manually</Button>
 				<Button color="blue" onClick={() => setActiveModal('pubId')}>Add by publication ID</Button>
-				<Button color="green" onClick={() => setActiveModal('orcid')}>Add by reasearcher ID</Button>
+				<Button color="green" onClick={() => setActiveModal('researcherId')}>Add by reasearcher ID</Button>
 			</Group>
 			<DataTable
 				withTableBorder
@@ -229,7 +207,7 @@ const MyPublicationsPage = () => {
 						title: 'Status',
 						width: 110,
 						render: (pub: Publication) => {
-							const color = pub.status === 'approved' ? 'green' : status === 'rejected' ? 'red' : 'orange';
+							const color = pub.status === 'approved' ? 'green' : pub.status === 'rejected' ? 'red' : 'orange';
 							return <Badge color={color}>{pub.status}</Badge>;
 						}
 					},
@@ -238,7 +216,7 @@ const MyPublicationsPage = () => {
 						render: (pub: Publication) => (
 							<Group gap={8} justify="flex-end">
 								<Button size="xs" variant="light" onClick={() => openAssignModal(pub)}>Assign to project</Button>
-								<Button size="xs" variant="blue" onClick={() => { setEditingPublication(pub); setActiveModal('edit'); }}>Edit</Button>
+								<Button size="xs" variant="blue" onClick={() => { setEditingPublication(pub); setActiveModal('manual'); }}>Edit</Button>
 								<Button size="xs" color="red" variant="light" onClick={() => deletePublication(pub)}>Delete</Button>
 							</Group>
 						)

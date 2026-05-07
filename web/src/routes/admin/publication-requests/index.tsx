@@ -140,7 +140,7 @@ const PublicationRequests = () => {
 							render: ({ createdAt }) => createdAt ? new Date(createdAt).toLocaleString() : 'N/A'
 						},
 						{
-							acessor: 'actions',
+							accessor: 'actions',
 							title: 'actions',
 							width: 100,
 							textAlign: 'right',
