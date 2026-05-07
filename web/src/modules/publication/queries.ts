@@ -13,11 +13,33 @@ export const useProjectPublicationsQuery = (id: number, pagination: Pagination, 
 			)
 	});
 
-export const usePublicationRequestsQuery = (pagination: Pagination, sortSelector: string) =>
+export const usePublicationRequestsQuery = (
+	pagination: Pagination,
+	sortSelector: string,
+	filter: 'all' | 'pending' | 'approved' | 'rejected' = 'pending'
+) =>
 	useQuery({
-		queryKey: ['publications', 'requests', pagination.page, pagination.limit, sortSelector],
-		queryFn: () =>
-			request<PaginationResponse<Publication>>(
-				`/publications/approval?page=${pagination.page}&limit=${pagination.limit}&sort=${sortSelector}`
-			)
+		queryKey: [
+			'publications',
+			'requests',
+			pagination.page,
+			pagination.limit,
+			sortSelector,
+			filter,
+			pagination.search
+		],
+		queryFn: () => {
+			const params = new URLSearchParams({
+				page: String(pagination.page),
+				limit: String(pagination.limit),
+				sort: sortSelector
+			});
+			if (filter !== 'all') {
+				params.set('status', filter);
+			}
+			if (pagination.search && pagination.search.trim().length > 0) {
+				params.set('search', pagination.search.trim());
+			}
+			return request<PaginationResponse<Publication>>(`/publications/approval?${params}`);
+		}
 	});
