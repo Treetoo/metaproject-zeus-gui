@@ -6,10 +6,11 @@ import { Modal, Button, Group, TextInput, Select, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { createMyPublicationById, assignMyPublicationToProject } from '@/modules/publication/api/my-publications';
 import { useMyActiveProjectsQuery } from '@/modules/project/queries';
+import { PublicationSource } from '@/modules/publication/model';
 
 const schema = z.object({
 	identifier: z.string().min(1, "Identifier is required"),
-	projectId: z.number({ required_error: "Please select a project" }).min(1, "Please select a project")
+	projectId: z.string({ required_error: "Please select a project" }).min(1, "Please select a project").nullable()
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -21,10 +22,13 @@ interface IdentifierAddModalProps {
 	title: string;
 	label: string;
 	placeholder: string;
-	projectId: number;
 }
 
-const TYPE_OPTIONS = [
+type TypeOption = {
+	value: PublicationSource,
+	label: string
+}
+const TYPE_OPTIONS: TypeOption[] = [
 	{ value: 'unknown', label: 'Auto Detect' },
 	{ value: 'doi', label: 'DOI' },
 	{ value: 'pubmed', label: 'PMID' },
@@ -33,9 +37,9 @@ const TYPE_OPTIONS = [
 	{ value: 'arxiv', label: 'arXiv' },
 ];
 
-export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, placeholder, projectId: activeProjectId }: IdentifierAddModalProps) {
+export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, placeholder }: IdentifierAddModalProps) {
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [selectedType, setSelectedType] = useState<string>('unknown');
+	const [selectedType, setSelectedType] = useState<PublicationSource>('unknown');
 	const [forceTypeChange, setForceTypeChange] = useState(false);
 	const { data: myProjects, isPending: isProjectsPending } = useMyActiveProjectsQuery();
 
@@ -51,20 +55,20 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 		resolver: zodResolver(schema),
 		defaultValues: {
 			identifier: '',
-			projectId: ''
+			projectId: null
 		}
 	});
 
 	useEffect(() => {
 		if (projectOptions.length === 1) {
-			form.setValue('projectId', Number(projectOptions[0].value), { shouldValidate: true });
+			form.setValue('projectId', projectOptions[0].value, { shouldValidate: true });
 		}
 	}, [projectOptions, form]);
 
 	const handleClose = () => {
 		form.reset();
 		if (projectOptions.length === 1) {
-			form.setValue('projectId', Number(projectOptions[0].value), { shouldValidate: true });
+			form.setValue('projectId', projectOptions[0].value, { shouldValidate: true });
 		}
 		setSelectedType('unknown');
 		setForceTypeChange(false);
@@ -85,12 +89,12 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 			const result = await createMyPublicationById({
 				uniqueId: identifier.trim(),
 				type: selectedType,
-				project: { projectId: projectId }
+				project: { projectId: Number(projectId) }
 			});
 
-			if (activeProjectId) {
+			if (projectId) {
 				if (result && typeof result === 'object' && 'id' in result) {
-					await assignMyPublicationToProject(result.id, activeProjectId);
+					await assignMyPublicationToProject(result.id, Number(projectId));
 					notifications.show({ message: `Publication added by ${label} and assigned to project`, color: 'green' });
 				} else {
 					throw new Error('Publication created but response is missing id field');
@@ -102,7 +106,6 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 			handleClose();
 		} catch (e: any) {
 			const status = e?.status ||
-
 				e?.response?.status ||
 				e?.data?.status;
 
@@ -142,7 +145,7 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 							data={TYPE_OPTIONS}
 							value={selectedType}
 							onChange={(value) => {
-								setSelectedType(value || 'unknown');
+								setSelectedType(value as PublicationSource);
 								if (value !== 'unknown') setForceTypeChange(false);
 							}}
 							error={forceTypeChange && selectedType === 'unknown' ? 'Selection required' : false}
@@ -155,7 +158,7 @@ export function IdentifierAddModal({ opened, onClose, onSuccess, title, label, p
 									label="Select project"
 									placeholder={isProjectsPending ? "Loading projects..." : "Choose a project"}
 									data={projectOptions}
-									value={field.value ? String(field.value) : null}
+									value={field.value || 'unknown'}
 									onChange={(val) => field.onChange(val ? Number(val) : undefined)}
 									error={fieldState.error?.message}
 									required

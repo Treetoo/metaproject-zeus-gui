@@ -9,6 +9,7 @@ export const onSigninCallback = async (user: User | void): Promise<void> => {
 	if (user instanceof User) {
 		const userResponse = await signInUser(user.access_token);
 		const role = userResponse.role;
+
 		if (role) {
 			localStorage.setItem(MAX_ROLE, role);
 			// Dispatch custom event to notify context of role change

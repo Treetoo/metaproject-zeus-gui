@@ -3,26 +3,27 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal, Button, TextInput, Group, NumberInput, Select } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
+
 import type { Publication } from '@/modules/publication/model';
 import { createMyPublication, updateMyPublication } from '@/modules/publication/api/my-publications';
-import { manualPublicationSchema, ManualPublicationSchema } from '@/modules/publication/form';
+import { manualPublicationSchema, type ManualPublicationSchema } from '@/modules/publication/form';
 import { useMyActiveProjectsQuery } from '@/modules/project/queries';
 
-interface AddManuallyModalProps {
+type AddManuallyModalProps = {
 	opened: boolean;
 	onClose: () => void;
 	onSuccess: () => Promise<void>;
 	editPublication?: Publication | null;
-}
+};
 
-export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }: AddManuallyModalProps) {
+export const AddManuallyModal = ({ opened, onClose, onSuccess, editPublication }: AddManuallyModalProps) => {
 	const { data: myProjects, isPending: isProjectsPending } = useMyActiveProjectsQuery();
 
 	const projectOptions = useMemo(() => {
 		if (!myProjects || !Array.isArray(myProjects)) return [];
-		return myProjects.map((project) => ({
+		return myProjects.map(project => ({
 			value: String(project.id),
-			label: project.title,
+			label: project.title
 		}));
 	}, [myProjects]);
 
@@ -33,17 +34,27 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 
 	const isEditMode = !!editPublication;
 
-	const addForm = useForm({
-		resolver: zodResolver(manualPublicationSchema),
-		defaultValues: isEditMode
-			? {
-				title: editPublication.title,
-				authors: editPublication.authors,
-				year: editPublication.year,
-				journal: editPublication.journal,
-				url: editPublication.url,
-			} : {}
-	});
+	const createForm = () =>
+		useForm<ManualPublicationSchema>({
+			resolver: zodResolver(manualPublicationSchema),
+			defaultValues: isEditMode
+				? {
+					title: editPublication.title,
+					authors: editPublication.authors,
+					year: editPublication.year,
+					journal: editPublication.journal,
+					url: editPublication.url
+				}
+				: {
+					title: '',
+					authors: '',
+					year: undefined,
+					journal: '',
+					url: '',
+					projectId: defaultProjectId ? Number(defaultProjectId) : undefined
+				}
+		});
+	const addForm = createForm();
 
 	useEffect(() => {
 		if (editPublication) {
@@ -52,37 +63,52 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 				authors: editPublication.authors,
 				year: editPublication.year,
 				journal: editPublication.journal,
-				url: editPublication.url,
+				url: editPublication.url
 			});
 		}
-		if (!isEditMode && defaultProjectId) {
-			const currentProjectId = addForm.getValues('projectId');
-			if (!currentProjectId) {
-				addForm.setValue('projectId', Number(defaultProjectId), { shouldValidate: true });
-			}
+
+		if (projectOptions.length === 1) {
+			addForm.setValue('projectId', Number(projectOptions[0].value), { shouldValidate: true });
 		}
-	}, [defaultProjectId, isEditMode, addForm]);
+	}, [projectOptions, editPublication, addForm]);
 
 	const handleClose = () => {
-		addForm.reset();
-		if (!isEditMode) {
-			addForm.setValue('projectId', Number(defaultProjectId), { shouldValidate: true });
-		}
+		addForm.reset({
+			title: '',
+			authors: '',
+			year: null,
+			journal: '',
+			url: '',
+			projectId: !isEditMode && defaultProjectId ? Number(defaultProjectId) : undefined
+		});
 		onClose();
 	};
 
 	const handleSubmit = addForm.handleSubmit(async (values: ManualPublicationSchema) => {
-		if (!isEditMode && !values.projectId) {
-			addForm.setError('projectId', { message: 'Please select a project' });
+		if (values.year === null || values.authors === '' || values.journal === '' || values.title === '') {
+			notifications.show({ message: 'All fields must be set.', color: 'yellow' });
 			return;
 		}
 
 		try {
 			if (isEditMode && editPublication?.id) {
-				await updateMyPublication(editPublication.id, { ...values, source: editPublication.source || 'manual' });
+				await updateMyPublication(editPublication.id, {
+					...values,
+					year: values.year as number,
+					source: editPublication.source || 'manual'
+				});
 				notifications.show({ message: 'Publication updated', color: 'green' });
 			} else {
-				await createMyPublication({ ...values, source: 'manual', project: { projectId: values.projectId } });
+				if (!values.projectId) {
+					notifications.show({ message: 'Please select a project', color: 'yellow' });
+					return;
+				}
+				await createMyPublication({
+					...values,
+					source: 'manual',
+					year: values.year as number,
+					project: { projectId: values.projectId }
+				});
 				notifications.show({ message: 'Publication added', color: 'green' });
 			}
 			onSuccess();
@@ -94,20 +120,38 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 	});
 
 	return (
-		<Modal opened={opened} onClose={handleClose} title={isEditMode ? 'Edit publication' : 'Add publication'} centered size="xl">
+		<Modal
+			opened={opened}
+			onClose={handleClose}
+			title={isEditMode ? 'Edit publication' : 'Add publication'}
+			centered
+			size="xl"
+		>
 			<form onSubmit={handleSubmit}>
-				<TextInput label="Title" {...addForm.register('title')} error={addForm.formState.errors.title?.message} withAsterisk />
-				<TextInput label="Authors" {...addForm.register('authors')} error={addForm.formState.errors.authors?.message} withAsterisk />
+				<TextInput
+					label="Title"
+					{...addForm.register('title')}
+					error={addForm.formState.errors.title?.message}
+					withAsterisk
+				/>
+				<TextInput
+					label="Authors"
+					{...addForm.register('authors')}
+					error={addForm.formState.errors.authors?.message}
+					withAsterisk
+				/>
 				<Controller
 					control={addForm.control}
 					name="year"
-					render={({ field }: { field: { value: number | undefined; onChange: (value: number | string | null) => void } }) => (
+					render={({
+						field
+					}: {
+						field: { value: number | null; onChange: (value: number | string | null) => void };
+					}) => (
 						<NumberInput
 							label="Year"
-							min={0}
-							max={2200}
-							value={field.value}
-							onChange={(value) => field.onChange(typeof value === 'number' ? value : null)}
+							value={field.value as number}
+							onChange={value => field.onChange(typeof value === 'number' ? value : null)}
 							error={addForm.formState.errors.year?.message}
 							withAsterisk
 						/>
@@ -123,7 +167,7 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 								placeholder={isProjectsPending ? 'Loading projects...' : 'Choose a project'}
 								data={projectOptions}
 								value={field.value ? String(field.value) : null}
-								onChange={(val) => field.onChange(val ? Number(val) : undefined)}
+								onChange={val => field.onChange(val ? Number(val) : undefined)}
 								error={fieldState.error?.message}
 								required
 								searchable
@@ -133,8 +177,18 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 						)}
 					/>
 				)}
-				<TextInput label="Journal" {...addForm.register('journal')} error={addForm.formState.errors.journal?.message} withAsterisk />
-				<TextInput label="URL" {...addForm.register('url')} error={addForm.formState.errors.url?.message} withAsterisk />
+				<TextInput
+					label="Journal"
+					{...addForm.register('journal')}
+					error={addForm.formState.errors.journal?.message}
+					withAsterisk
+				/>
+				<TextInput
+					label="URL"
+					{...addForm.register('url')}
+					error={addForm.formState.errors.url?.message}
+					withAsterisk
+				/>
 				<Group mt={15} justify="flex-end">
 					<Button variant="default" type="button" onClick={handleClose}>
 						Cancel
@@ -146,4 +200,4 @@ export function AddManuallyModal({ opened, onClose, onSuccess, editPublication }
 			</form>
 		</Modal>
 	);
-}
+};

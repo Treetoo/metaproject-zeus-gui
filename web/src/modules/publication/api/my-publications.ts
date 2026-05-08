@@ -2,6 +2,7 @@ import { Method } from '@/modules/api/model';
 import { request } from '@/modules/api/request';
 import type { PaginationResponse } from '@/modules/api/pagination/model';
 import type { Publication } from '@/modules/publication/model';
+import type { PublicationSource } from '@/modules/publication/model';
 
 export type Project = {
 	projectId: number
@@ -10,18 +11,23 @@ export type Project = {
 export type CreateMyPublicationByIdRequest = {
 	uniqueId: string,
 	project: Project,
-	type: 'doi' | 'unknown' | 'handle' | 'isbn' | 'issn' | 'nma'
+	type: PublicationSource;
 }
 
-export type CreateMyPublicationRequest = {
+type PublicationRequest = {
 	title: string;
 	authors: string;
 	year: number;
 	journal: string;
-	project: Project,
-	source: 'doi' | 'manual';
+	source: PublicationSource;
 	uniqueId?: string;
-};
+}
+
+export interface CreateMyPublicationRequest extends PublicationRequest {
+	project: Project,
+}
+
+export interface UpdateMyPublicationRequest extends PublicationRequest { }
 
 export const listMyPublications = async (
 	page: number,
@@ -38,7 +44,7 @@ export const createMyPublicationById = async (data: CreateMyPublicationByIdReque
 		json: data
 	});
 
-export const updateMyPublication = async (publicationId: number, data: CreateMyPublicationRequest) =>
+export const updateMyPublication = async (publicationId: number, data: PublicationRequest) =>
 	request(`/my/publications/${publicationId}`, {
 		method: Method.PUT,
 		json: data

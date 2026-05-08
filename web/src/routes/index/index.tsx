@@ -30,7 +30,7 @@ const Index: React.FC = () => {
 			<Title order={2}>{t('routes.index.title')}</Title>
 			<Box>
 				<Button variant="outline" mt={20} w={300} onClick={() => signinRedirect()}>
-					{t('routes.index.buttons.MUNI')}
+					{t('routes.index.buttons.eINFRA')}
 				</Button>
 			</Box>
 		</Flex>
