@@ -32,11 +32,19 @@ export interface UpdateMyPublicationRequest extends PublicationRequest { }
 export const listMyPublications = async (
 	page: number,
 	limit: number,
-	sortSelector: string
-) =>
-	request<PaginationResponse<Publication>>(
-		`/my/publications?page=${page}&limit=${limit}&sort=${encodeURIComponent(sortSelector)}`
-	);
+	sortSelector: string,
+	status?: string,
+	search?: string
+) => {
+	const params = new URLSearchParams({ page: String(page), limit: String(limit), sort: sortSelector });
+	if (status && status !== 'all') {
+		params.set('status', status);
+	}
+	if (search?.trim()) {
+		params.set('search', search.trim());
+	}
+	return request<PaginationResponse<Publication>>(`/my/publications?${params}`);
+};
 
 export const createMyPublicationById = async (data: CreateMyPublicationByIdRequest) =>
 	request<{ id: number }>(`/my/publications/add-by-id`, {
@@ -66,3 +74,20 @@ export const deleteMyPublication = async (publicationId: number) =>
 	request(`/my/publications/${publicationId}`, {
 		method: Method.DELETE
 	});
+
+export const listMyCreditedPublications = async (
+	page: number,
+	limit: number,
+	sortSelector: string,
+	status?: string,
+	search?: string
+) => {
+	const params = new URLSearchParams({ page: String(page), limit: String(limit), sort: sortSelector });
+	if (status && status !== 'all') {
+		params.set('status', status);
+	}
+	if (search?.trim()) {
+		params.set('search', search.trim());
+	}
+	return request<PaginationResponse<Publication>>(`/my/publications/credited?${params}`);
+};

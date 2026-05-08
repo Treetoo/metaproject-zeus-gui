@@ -66,7 +66,10 @@
             }
           },
           "publications": {
-            "title": "Publications"
+            "title": "Publications",
+            "my_publications": "My Publications",
+            "credited": "Credited",
+            "all_publications": "All Publications"
           }
         }
       }

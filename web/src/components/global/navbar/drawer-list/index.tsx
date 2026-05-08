@@ -101,7 +101,19 @@ const DrawerList = ({ open, onClose }: DrawerListProps) => {
 	const publicationsLink: LinkNode = {
 		title: 'components.global.drawerList.links.publications.title',
 		href: '/publications',
-		icon: <IconLibrary />
+		icon: <IconLibrary />,
+		links: [
+			{
+				title: 'components.global.drawerList.links.publications.my_publications',
+				href: '/publications?tab=my',
+				icon: <IconLibrary />
+			},
+			{
+				title: 'components.global.drawerList.links.publications.all_publications',
+				href: '/publications?tab=all',
+				icon: <IconArticle />
+			}
+		]
 	};
 
 	const adminLinks: LinkNode = {
