@@ -21,3 +21,18 @@ export const rejectPublication = async (data: ApprovePublicationDto) => {
 		json: data
 	});
 };
+
+export const approveCreditRequest = async (data: ApprovePublicationDto) => {
+	data.weight = data.weight ?? 1;
+	await request(`/publications/credit-approval/${data.publicationId}/approve`, {
+		method: Method.POST,
+		json: data
+	});
+};
+
+export const rejectCreditRequest = async (data: ApprovePublicationDto) => {
+	await request(`/publications/credit-approval/${data.publicationId}/reject`, {
+		method: Method.POST,
+		json: data
+	});
+};

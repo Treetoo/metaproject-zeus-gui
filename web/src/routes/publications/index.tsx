@@ -1,9 +1,10 @@
 import { Box, Button, Group, Modal, Stack, Text, Title, Badge, Tabs } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import type { DataTableSortStatus } from 'mantine-datatable';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { modals } from '@mantine/modals';
-import { IconLibrary, IconArticle, IconUserCheck } from '@tabler/icons-react';
+import { IconLibrary, IconArticle, IconUserCheck, IconWorld } from '@tabler/icons-react';
 
 import { PublicationsTable } from '@/components/publications/publication-table';
 import { PublicationDetailModal } from '@/components/publications/publication-detail-modal';
@@ -16,14 +17,16 @@ import { getSortQuery } from '@/modules/api/sorting/utils';
 import {
 	useDeleteMyPublicationMutation,
 	useMyPublicationsQuery,
-	useMyCreditedPublicationsQuery
+	useMyCreditedPublicationsQuery,
+	useMyStakeholderPublicationsQuery,
+	useRequestCreditMutation
 } from '@/modules/publication/my-queries';
 import { usePublicationRequestsQuery } from '@/modules/publication/queries';
 import type { Publication } from '@/modules/publication/model';
 
 type FilterType = 'all' | 'pending' | 'approved' | 'rejected';
 type ModalType = 'manual' | 'pubId' | 'researcherId' | 'detail' | null;
-type TabType = 'my' | 'credited' | 'all';
+type TabType = 'my' | 'credited' | 'stakeholder' | 'all';
 
 const MyPublicationsPage = () => {
 	const [searchParams, setSearchParams] = useSearchParams();
@@ -63,6 +66,20 @@ const MyPublicationsPage = () => {
 		creditedSort
 	]);
 
+	// Stakeholder Publications state
+	const [stakeholderPage, setStakeholderPage] = useState(1);
+	const [stakeholderLimit, setStakeholderLimit] = useState(PUBLICATION_PAGE_SIZES[0]);
+	const [stakeholderSort, setStakeholderSort] = useState<DataTableSortStatus<Publication>>({
+		columnAccessor: 'id',
+		direction: 'asc'
+	});
+	const [stakeholderFilter, setStakeholderFilter] = useState<FilterType>('all');
+	const [stakeholderSearch, setStakeholderSearch] = useState('');
+	const stakeholderSortQuery = useMemo(
+		() => getSortQuery(stakeholderSort.columnAccessor, stakeholderSort.direction),
+		[stakeholderSort]
+	);
+
 	// All Publications state
 	const [allPage, setAllPage] = useState(1);
 	const [allLimit, setAllLimit] = useState(PUBLICATION_PAGE_SIZES[0]);
@@ -78,9 +95,16 @@ const MyPublicationsPage = () => {
 		creditedFilter,
 		creditedSearch
 	);
+	const stakeholderQuery = useMyStakeholderPublicationsQuery(
+		{ page: stakeholderPage, limit: stakeholderLimit },
+		stakeholderSortQuery,
+		stakeholderFilter,
+		stakeholderSearch
+	);
 	const allQuery = usePublicationRequestsQuery({ page: allPage, limit: allLimit }, allSortQuery, allFilter);
 
 	const deleteMutation = useDeleteMyPublicationMutation();
+	const requestCreditMutation = useRequestCreditMutation();
 	const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
 	const [viewingPublication, setViewingPublication] = useState<Publication | null>(null);
 
@@ -93,6 +117,8 @@ const MyPublicationsPage = () => {
 			await myQuery.refetch();
 		} else if (currentTab === 'credited') {
 			await creditedQuery.refetch();
+		} else if (currentTab === 'stakeholder') {
+			await stakeholderQuery.refetch();
 		}
 	};
 
@@ -112,6 +138,17 @@ const MyPublicationsPage = () => {
 				});
 			}
 		});
+	};
+
+	const handleRequestCredit = async (pub: Publication) => {
+		if (!pub.id) return;
+		try {
+			await requestCreditMutation.mutateAsync(pub.id);
+			await allQuery.refetch();
+			notifications.show({ message: 'Credit request sent successfully', color: 'green' });
+		} catch (error) {
+			notifications.show({ message: 'Failed to send credit request', color: 'red' });
+		}
 	};
 
 	return (
@@ -155,6 +192,9 @@ const MyPublicationsPage = () => {
 					</Tabs.Tab>
 					<Tabs.Tab value="credited" leftSection={<IconUserCheck />}>
 						Credited
+					</Tabs.Tab>
+					<Tabs.Tab value="stakeholder" leftSection={<IconWorld />}>
+						Stakeholder
 					</Tabs.Tab>
 					<Tabs.Tab value="all" leftSection={<IconArticle />}>
 						All Publications
@@ -259,6 +299,43 @@ const MyPublicationsPage = () => {
 						}}
 						search={creditedSearch}
 						onSearchChange={setCreditedSearch}
+						showCreditStatus
+					/>
+				</Tabs.Panel>
+
+				<Tabs.Panel value="stakeholder">
+					<PublicationsTable
+						records={stakeholderQuery.data?.data ?? []}
+						totalRecords={stakeholderQuery.data?.metadata?.totalRecords ?? 0}
+						isPending={stakeholderQuery.isPending}
+						page={stakeholderPage}
+						limit={stakeholderLimit}
+						sortStatus={stakeholderSort}
+						onPageChange={async p => {
+							setStakeholderPage(p);
+							await stakeholderQuery.refetch();
+						}}
+						onRecordsPerPageChange={async l => {
+							setStakeholderLimit(l);
+							await stakeholderQuery.refetch();
+						}}
+						onSortStatusChange={async s => {
+							setStakeholderSort(s);
+							setStakeholderPage(1);
+							await stakeholderQuery.refetch();
+						}}
+						onRowClick={record => {
+							setViewingPublication(record);
+							setActiveModal('detail');
+						}}
+						showFilters
+						filter={stakeholderFilter}
+						onFilterChange={f => {
+							setStakeholderFilter(f);
+							setStakeholderPage(1);
+						}}
+						search={stakeholderSearch}
+						onSearchChange={setStakeholderSearch}
 					/>
 				</Tabs.Panel>
 
@@ -295,6 +372,19 @@ const MyPublicationsPage = () => {
 						}}
 						search={allSearch}
 						onSearchChange={setAllSearch}
+						renderActions={pub => (
+							<Group gap={8} justify="flex-end">
+								<Button
+									size="xs"
+									variant="outline"
+									color="blue"
+									onClick={() => handleRequestCredit(pub)}
+									disabled={requestCreditMutation.isPending}
+								>
+									Ask for credit
+								</Button>
+							</Group>
+						)}
 					/>
 				</Tabs.Panel>
 			</Tabs>

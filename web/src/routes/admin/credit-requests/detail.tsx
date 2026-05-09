@@ -1,9 +1,9 @@
 import { ReviewDetail } from '@/components/publications/review-detail';
-import { approvePublication, rejectPublication } from '@/modules/publication/api/approve-publication';
+import { approveCreditRequest, rejectCreditRequest } from '@/modules/publication/api/approve-publication';
 import { type ApprovalFormData } from '@/modules/publication/approval-form';
 import { type Publication } from '@/modules/publication/model';
 
-type PublicationApprovalDetailProps = {
+type CreditRequestDetailProps = {
 	opened: boolean;
 	onClose: () => void;
 	publication: Publication | null;
@@ -11,21 +11,21 @@ type PublicationApprovalDetailProps = {
 	onRejected?: () => void;
 };
 
-export const PublicationApprovalDetail = ({
+export const CreditRequestDetail = ({
 	opened,
 	onClose,
 	publication,
 	onApproved,
 	onRejected
-}: PublicationApprovalDetailProps) => {
+}: CreditRequestDetailProps) => {
 	const handleApprove = async (data: ApprovalFormData) => {
 		if (!publication?.id) return;
-		await approvePublication({ ...data, publicationId: publication.id });
+		await approveCreditRequest({ ...data, publicationId: publication.id });
 	};
 
 	const handleReject = async (data: ApprovalFormData) => {
 		if (!publication?.id) return;
-		await rejectPublication({ ...data, publicationId: publication.id });
+		await rejectCreditRequest({ ...data, publicationId: publication.id });
 	};
 
 	return (
@@ -33,12 +33,12 @@ export const PublicationApprovalDetail = ({
 			opened={opened}
 			onClose={onClose}
 			publication={publication}
-			title="Publication"
-			statusLabel="Status"
-			successMessage="Publication approved successfully"
-			rejectMessage="Publication rejected"
-			failureMessage="Failed to approve publication"
-			queryKey={['publications', 'approval', 'pending']}
+			title="Credit Request"
+			statusLabel="Credit Status"
+			successMessage="Credit request approved successfully"
+			rejectMessage="Credit request rejected"
+			failureMessage="Failed to approve credit request"
+			queryKey={['publications', 'credit-requests']}
 			onApproved={onApproved}
 			onRejected={onRejected}
 			onApprove={handleApprove}

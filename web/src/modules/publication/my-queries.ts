@@ -7,7 +7,9 @@ import {
 	deleteMyPublication,
 	listMyPublications,
 	updateMyPublication,
-	listMyCreditedPublications
+	listMyCreditedPublications,
+	listMyStakeholderPublications,
+	requestCredit
 } from '@/modules/publication/api/my-publications';
 
 export const useMyPublicationsQuery = (
@@ -32,6 +34,17 @@ export const useMyCreditedPublicationsQuery = (
 		queryFn: () => listMyCreditedPublications(pagination.page, pagination.limit, sortSelector, status, search)
 	});
 
+export const useMyStakeholderPublicationsQuery = (
+	pagination: Pagination,
+	sortSelector: string,
+	status?: string,
+	search?: string
+) =>
+	useQuery({
+		queryKey: ['my', 'stakeholder', 'publications', pagination.page, pagination.limit, sortSelector, status, search],
+		queryFn: () => listMyStakeholderPublications(pagination.page, pagination.limit, sortSelector, status, search)
+	});
+
 export const useAssignMyPublicationMutation = () =>
   useMutation({
     mutationFn: ({ id, projectId }: { id: number; projectId: number }) =>
@@ -48,3 +61,8 @@ export const useDeleteMyPublicationMutation = () =>
   useMutation({
     mutationFn: (id: number) => deleteMyPublication(id)
   });
+
+export const useRequestCreditMutation = () =>
+	useMutation({
+		mutationFn: (publicationId: number) => requestCredit(publicationId)
+	});

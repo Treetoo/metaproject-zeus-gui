@@ -32,6 +32,10 @@ const getLinks = (role: Role) => {
 		{
 			title: `components.global.drawerList.links.${role}.link.publication_requests`,
 			href: `${prefix}/publication-requests`
+		},
+		{
+			title: 'Credit Requests',
+			href: `${prefix}/credit-requests`
 		}
 	];
 

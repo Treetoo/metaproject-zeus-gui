@@ -43,3 +43,34 @@ export const usePublicationRequestsQuery = (
 			return request<PaginationResponse<Publication>>(`/publications/approval?${params}`);
 		}
 	});
+
+export const useCreditRequestsQuery = (
+	pagination: Pagination,
+	sortSelector: string,
+	filter: 'all' | 'pending' | 'approved' | 'rejected' = 'pending'
+) =>
+	useQuery({
+		queryKey: [
+			'publications',
+			'credit-requests',
+			pagination.page,
+			pagination.limit,
+			sortSelector,
+			filter,
+			pagination.search
+		],
+		queryFn: () => {
+			const params = new URLSearchParams({
+				page: String(pagination.page),
+				limit: String(pagination.limit),
+				sort: sortSelector
+			});
+			if (filter !== 'all') {
+				params.set('status', filter);
+			}
+			if (pagination.search && pagination.search.trim().length > 0) {
+				params.set('search', pagination.search.trim());
+			}
+			return request<PaginationResponse<Publication>>(`/publications/credit-approval?${params}`);
+		}
+	});

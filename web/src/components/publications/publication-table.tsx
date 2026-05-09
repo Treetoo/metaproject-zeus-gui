@@ -68,6 +68,7 @@ type PublicationsTableProps = {
 	onSelectedFieldsChange?: (fields: string[]) => void;
 	isExporting?: boolean;
 	onExportConfirm?: () => void;
+	showCreditStatus?: boolean;
 };
 
 export const PublicationsTable: React.FC<PublicationsTableProps> = ({
@@ -78,6 +79,7 @@ export const PublicationsTable: React.FC<PublicationsTableProps> = ({
 	page,
 	limit,
 	sortStatus,
+	showCreditStatus = false,
 	onPageChange,
 	onRecordsPerPageChange,
 	onSortStatusChange,
@@ -244,6 +246,25 @@ export const PublicationsTable: React.FC<PublicationsTableProps> = ({
 							return <Badge color={color}>{pub.status}</Badge>;
 						}
 					},
+					...(showCreditStatus
+						? [
+								{
+									accessor: 'creditStatus',
+									title: 'Credit Status',
+									width: 130,
+									sortable: false,
+									render: (pub: Publication) => {
+										const color =
+											pub.creditStatus === 'approved'
+												? 'green'
+												: pub.creditStatus === 'rejected'
+													? 'red'
+													: 'orange';
+										return <Badge color={color}>{pub.creditStatus || 'pending'}</Badge>;
+									}
+								}
+						  ]
+						: []),
 					...(renderActions
 						? [
 								{

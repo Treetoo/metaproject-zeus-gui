@@ -12,6 +12,7 @@ export type CreateMyPublicationByIdRequest = {
 	uniqueId: string,
 	project: Project,
 	type: PublicationSource;
+	stakeholderIds?: number[];
 }
 
 type PublicationRequest = {
@@ -25,6 +26,7 @@ type PublicationRequest = {
 
 export interface CreateMyPublicationRequest extends PublicationRequest {
 	project: Project,
+	stakeholderIds?: number[];
 }
 
 export interface UpdateMyPublicationRequest extends PublicationRequest { }
@@ -91,3 +93,25 @@ export const listMyCreditedPublications = async (
 	}
 	return request<PaginationResponse<Publication>>(`/my/publications/credited?${params}`);
 };
+
+export const listMyStakeholderPublications = async (
+	page: number,
+	limit: number,
+	sortSelector: string,
+	status?: string,
+	search?: string
+) => {
+	const params = new URLSearchParams({ page: String(page), limit: String(limit), sort: sortSelector });
+	if (status && status !== 'all') {
+		params.set('status', status);
+	}
+	if (search?.trim()) {
+		params.set('search', search.trim());
+	}
+	return request<PaginationResponse<Publication>>(`/my/publications/stakeholder?${params}`);
+};
+
+export const requestCredit = async (publicationId: number) =>
+	request(`/my/publications/credit-request/${publicationId}`, {
+		method: Method.POST
+	});

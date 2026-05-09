@@ -20,4 +20,6 @@ export type Publication = {
 	createdAt?: EpochTimeStamp;
 	// optional flag from backend indicating the current user is the owner
 	isOwner?: boolean;
+	// Only populated for credited publications tab
+	creditStatus?: 'pending' | 'approved' | 'rejected';
 };

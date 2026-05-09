@@ -32,6 +32,7 @@ import AllProjects from '@/routes/admin/projects';
 import AllocationRequestDetail from '@/routes/admin/allocation-requests/detail';
 import AdminAllocations from '@/routes/admin/allocations';
 import PublicationRequests from '@/routes/admin/publication-requests';
+import CreditRequests from '@/routes/admin/credit-requests';
 import AllocationRequestsList from '@/routes/admin/allocation-requests/list';
 import ProjectInvitation from '@/routes/project/invitation';
 import AdminLinkPage from '@/routes/admin';
@@ -96,7 +97,8 @@ const router = createBrowserRouter(
 				<Route path="stages" element={<FailedProjects />} />
 				<Route path="allocations" element={<AdminAllocations />} />
 				<Route path="allocation-requests" element={<AllocationRequestsList />} />
-				<Route path="publication-requests" element={<PublicationRequests/>} />
+				<Route path="publication-requests" element={<PublicationRequests />} />
+				<Route path="credit-requests" element={<CreditRequests />} />
 				<Route path="allocations/:allocationId" element={<AllocationRequestDetail />} />
 			</Route>
 			<Route path="/director" element={<AdminRouteGuard />}>
@@ -111,7 +113,8 @@ const router = createBrowserRouter(
 				<Route path="resources/:id" element={<ResourceDetailPage />} />
 				<Route path="allocations" element={<AdminAllocations />} />
 				<Route path="allocation-requests" element={<AllocationRequestsList />} />
-				<Route path="publication-requests" element={<PublicationRequests/>} />
+				<Route path="publication-requests" element={<PublicationRequests />} />
+				<Route path="credit-requests" element={<CreditRequests />} />
 				<Route path="allocations/:allocationId" element={<AllocationRequestDetail />} />
 			</Route>
 			<Route path="*" element={<NotFound />} />
@@ -182,7 +185,8 @@ const App = () => {
 					<Route path="allocations" element={<AdminAllocations />} />
 					<Route path="allocation-requests" element={<AllocationRequestsList />} />
 					<Route path="allocations/:allocationId" element={<AllocationRequestDetail />} />
-					<Route path="publication-requests" element={<PublicationRequests/>} />
+					<Route path="publication-requests" element={<PublicationRequests />} />
+					<Route path="credit-requests" element={<CreditRequests />} />
 				</Route>
 				<Route path="/director" element={<AdminRouteGuard />}>
 					<Route index element={<AdminLinkPage />} />
@@ -197,7 +201,8 @@ const App = () => {
 					<Route path="allocations" element={<AdminAllocations />} />
 					<Route path="allocation-requests" element={<AllocationRequestsList />} />
 					<Route path="allocations/:allocationId" element={<AllocationRequestDetail />} />
-					<Route path="publication-requests" element={<PublicationRequests/>} />
+					<Route path="publication-requests" element={<PublicationRequests />} />
+					<Route path="credit-requests" element={<CreditRequests />} />
 				</Route>
 				<Route path="*" element={<NotFound />} />
 			</Route>
