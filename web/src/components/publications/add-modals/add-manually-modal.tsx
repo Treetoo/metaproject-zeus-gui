@@ -9,15 +9,29 @@ import { createMyPublication, updateMyPublication } from '@/modules/publication/
 import { manualPublicationSchema, type ManualPublicationSchema } from '@/modules/publication/form';
 import { useMyActiveProjectsQuery } from '@/modules/project/queries';
 import { StakeholderSelectionModal } from './stakeholder-selection-modal';
+import { type PublicationSource } from '@/modules/publication/model';
 
 type AddManuallyModalProps = {
 	opened: boolean;
 	onClose: () => void;
 	onSuccess: () => Promise<void>;
 	editPublication?: Publication | null;
+	fetchedPublication?: Publication | null;
+	sourceType?: PublicationSource | null;
+	allowSkip?: boolean;
+	onSkip?: () => void;
 };
 
-export const AddManuallyModal = ({ opened, onClose, onSuccess, editPublication }: AddManuallyModalProps) => {
+export const AddManuallyModal = ({
+	opened,
+	onClose,
+	onSuccess,
+	editPublication,
+	fetchedPublication,
+	sourceType,
+	allowSkip,
+	onSkip
+}: AddManuallyModalProps) => {
 	const { data: myProjects, isPending: isProjectsPending } = useMyActiveProjectsQuery();
 
 	const projectOptions = useMemo(() => {
@@ -31,6 +45,7 @@ export const AddManuallyModal = ({ opened, onClose, onSuccess, editPublication }
 	const [showStakeholderModal, setShowStakeholderModal] = useState(false);
 	const [pendingFormValues, setPendingFormValues] = useState<ManualPublicationSchema | null>(null);
 	const [pendingProjectId, setPendingProjectId] = useState<number | null>(null);
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const defaultProjectId = useMemo(() => {
 		if (projectOptions.length === 1) return projectOptions[0].value;
@@ -38,26 +53,35 @@ export const AddManuallyModal = ({ opened, onClose, onSuccess, editPublication }
 	}, [projectOptions]);
 
 	const isEditMode = !!editPublication;
+	const isFetchedMode = !!fetchedPublication && !!sourceType;
 
 	const createForm = () =>
 		useForm<ManualPublicationSchema>({
 			resolver: zodResolver(manualPublicationSchema),
 			defaultValues: isEditMode
 				? {
-					title: editPublication.title,
-					authors: editPublication.authors,
-					year: editPublication.year,
-					journal: editPublication.journal,
-					url: editPublication.url
-				}
-				: {
-					title: '',
-					authors: '',
-					year: undefined,
-					journal: '',
-					url: '',
-					projectId: defaultProjectId ? Number(defaultProjectId) : undefined
-				}
+						title: editPublication.title,
+						authors: editPublication.authors,
+						year: editPublication.year,
+						journal: editPublication.journal,
+						url: editPublication.url
+					}
+				: isFetchedMode
+					? {
+							title: fetchedPublication.title,
+							authors: fetchedPublication.authors,
+							year: fetchedPublication.year,
+							journal: fetchedPublication.journal,
+							url: fetchedPublication.url
+						}
+					: {
+							title: '',
+							authors: '',
+							year: undefined,
+							journal: '',
+							url: '',
+							projectId: defaultProjectId ? Number(defaultProjectId) : undefined
+						}
 		});
 	const addForm = createForm();
 
@@ -70,12 +94,20 @@ export const AddManuallyModal = ({ opened, onClose, onSuccess, editPublication }
 				journal: editPublication.journal,
 				url: editPublication.url
 			});
+		} else if (fetchedPublication) {
+			addForm.reset({
+				title: fetchedPublication.title,
+				authors: fetchedPublication.authors,
+				year: fetchedPublication.year,
+				journal: fetchedPublication.journal,
+				url: fetchedPublication.url
+			});
 		}
 
 		if (projectOptions.length === 1) {
 			addForm.setValue('projectId', Number(projectOptions[0].value), { shouldValidate: true });
 		}
-	}, [projectOptions, editPublication, addForm]);
+	}, [projectOptions, editPublication, fetchedPublication, addForm]);
 
 	useEffect(() => {
 		if (opened && !isEditMode) {
@@ -127,18 +159,33 @@ export const AddManuallyModal = ({ opened, onClose, onSuccess, editPublication }
 				} else {
 					await createMyPublication({
 						...values,
-						source: 'manual',
+						source: isFetchedMode ? (sourceType as string) : 'manual',
 						year: values.year as number,
 						project: { projectId: values.projectId },
-						stakeholderIds: []
+						stakeholderIds: [],
+						...(isFetchedMode && fetchedPublication ? { uniqueId: fetchedPublication.uniqueId } : {})
 					});
 					notifications.show({ message: 'Publication added', color: 'green' });
 					onSuccess();
 					handleClose();
 				}
 			}
-		} catch (error) {
-			notifications.show({ message: 'Error saving publication', color: 'red' });
+		} catch (error: any) {
+			const status = error?.response?.status || error?.status;
+
+			if (status === 409) {
+				notifications.show({
+					message: 'This publication already exists in the system.',
+					color: 'orange'
+				});
+			} else if (status === 403) {
+				notifications.show({
+					message: 'This publication cannot be modified because it has already been approved.',
+					color: 'orange'
+				});
+			} else {
+				notifications.show({ message: 'Failed to save publication. Please try again.', color: 'red' });
+			}
 			handleClose();
 		}
 	});
@@ -149,23 +196,39 @@ export const AddManuallyModal = ({ opened, onClose, onSuccess, editPublication }
 		try {
 			await createMyPublication({
 				...pendingFormValues,
-				source: 'manual',
+				source: isFetchedMode ? (sourceType as string) : 'manual',
 				year: pendingFormValues.year as number,
 				project: { projectId: pendingProjectId },
-				stakeholderIds
+				stakeholderIds,
+				...(isFetchedMode && fetchedPublication ? { uniqueId: fetchedPublication.uniqueId } : {})
 			});
 
 			notifications.show({
 				message: `Publication added${stakeholderIds.length > 0 ? ` with ${stakeholderIds.length} stakeholder(s)` : ''}`,
 				color: 'green'
 			});
+
 			setShowStakeholderModal(false);
 			setPendingFormValues(null);
 			setPendingProjectId(null);
 			onSuccess();
 			handleClose();
-		} catch (error) {
-			notifications.show({ message: 'Error saving publication', color: 'red' });
+		} catch (error: any) {
+			const status = error?.response?.status || error?.status;
+
+			if (status === 409) {
+				notifications.show({
+					message: 'This publication already exists in the system.',
+					color: 'orange'
+				});
+			} else if (status === 403) {
+				notifications.show({
+					message: 'This publication cannot be modified because it has already been approved.',
+					color: 'orange'
+				});
+			} else {
+				notifications.show({ message: 'Failed to save publication. Please try again.', color: 'red' });
+			}
 			setShowStakeholderModal(false);
 			setPendingFormValues(null);
 			setPendingProjectId(null);
@@ -212,6 +275,19 @@ export const AddManuallyModal = ({ opened, onClose, onSuccess, editPublication }
 							/>
 						)}
 					/>
+					<TextInput
+						label="Journal"
+						{...addForm.register('journal')}
+						error={addForm.formState.errors.journal?.message}
+						withAsterisk
+					/>
+					<TextInput
+						label="URL"
+						{...addForm.register('url')}
+						error={addForm.formState.errors.url?.message}
+						withAsterisk
+					/>
+
 					{!isEditMode && (
 						<Controller
 							name="projectId"
@@ -232,24 +308,18 @@ export const AddManuallyModal = ({ opened, onClose, onSuccess, editPublication }
 							)}
 						/>
 					)}
-					<TextInput
-						label="Journal"
-						{...addForm.register('journal')}
-						error={addForm.formState.errors.journal?.message}
-						withAsterisk
-					/>
-					<TextInput
-						label="URL"
-						{...addForm.register('url')}
-						error={addForm.formState.errors.url?.message}
-						withAsterisk
-					/>
+
 					<Group mt={15} justify="flex-end">
+						{allowSkip && (
+							<Button variant="light" type="button" onClick={onSkip}>
+								Skip
+							</Button>
+						)}
 						<Button variant="default" type="button" onClick={handleClose}>
 							Cancel
 						</Button>
 						<Button type="submit" loading={addForm.formState.isSubmitting}>
-							{isEditMode ? 'Update publication' : 'Add publication'}
+							{isEditMode ? 'Update publication' : isFetchedMode ? 'Add publication' : 'Add publication'}
 						</Button>
 					</Group>
 				</form>

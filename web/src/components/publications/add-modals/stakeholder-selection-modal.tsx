@@ -74,10 +74,12 @@ export const StakeholderSelectionModal = ({
 		>
 			<Stack gap="lg">
 				<Text size="sm" c="dimmed">
-					{description || 'This is a personal project. Select users who should be added as stakeholders to this publication.'}
+					{description ||
+						'This is a personal project. Select users who should be added as stakeholders to this publication.'}
 				</Text>
 				<Alert icon={<IconInfoCircle />} color="orange" title="Important">
-					This is your only chance to add stakeholders. Once the publication is created, you cannot add stakeholders later.
+					This is your only chance to add stakeholders. Once the publication is created, you cannot add
+					stakeholders later.
 				</Alert>
 
 				<MultiSelect
@@ -94,12 +96,12 @@ export const StakeholderSelectionModal = ({
 					clearable
 					rightSection={isSearching ? <span>Loading...</span> : undefined}
 					styles={{
-						dropdown: { zIndex: 2000 },
-						options: { zIndex: 2000 }
+						dropdown: { zIndex: 10000 },
+						options: { zIndex: 10000 }
 					}}
 				/>
 
-				<Group justify="flex-end">
+				<Group justify="flex-end" mt="xl">
 					<Button variant="default" onClick={handleCancel}>
 						Cancel
 					</Button>

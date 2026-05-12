@@ -146,8 +146,22 @@ const MyPublicationsPage = () => {
 			await requestCreditMutation.mutateAsync(pub.id);
 			await allQuery.refetch();
 			notifications.show({ message: 'Credit request sent successfully', color: 'green' });
-		} catch (error) {
-			notifications.show({ message: 'Failed to send credit request', color: 'red' });
+		} catch (error: any) {
+			const status = error?.response?.status || error?.status;
+
+			if (status === 409) {
+				notifications.show({
+					message: 'You are already credited for this publication.',
+					color: 'orange'
+				});
+			} else if (status === 404) {
+				notifications.show({
+					message: 'This publication could not be found.',
+					color: 'red'
+				});
+			} else {
+				notifications.show({ message: 'Failed to send credit request. Please try again.', color: 'red' });
+			}
 		}
 	};
 

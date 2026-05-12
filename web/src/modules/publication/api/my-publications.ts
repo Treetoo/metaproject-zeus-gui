@@ -1,19 +1,11 @@
 import { Method } from '@/modules/api/model';
 import { request } from '@/modules/api/request';
 import type { PaginationResponse } from '@/modules/api/pagination/model';
-import type { Publication } from '@/modules/publication/model';
-import type { PublicationSource } from '@/modules/publication/model';
+import type { Publication, PublicationSource } from '@/modules/publication/model';
 
 export type Project = {
-	projectId: number
-}
-
-export type CreateMyPublicationByIdRequest = {
-	uniqueId: string,
-	project: Project,
-	type: PublicationSource;
-	stakeholderIds?: number[];
-}
+	projectId: number;
+};
 
 type PublicationRequest = {
 	title: string;
@@ -22,14 +14,14 @@ type PublicationRequest = {
 	journal: string;
 	source: PublicationSource;
 	uniqueId?: string;
-}
+};
 
-export interface CreateMyPublicationRequest extends PublicationRequest {
-	project: Project,
+export type CreateMyPublicationRequest = {
+	project: Project;
 	stakeholderIds?: number[];
-}
+} & PublicationRequest;
 
-export interface UpdateMyPublicationRequest extends PublicationRequest { }
+export type UpdateMyPublicationRequest = {} & PublicationRequest;
 
 export const listMyPublications = async (
 	page: number,
@@ -47,12 +39,6 @@ export const listMyPublications = async (
 	}
 	return request<PaginationResponse<Publication>>(`/my/publications?${params}`);
 };
-
-export const createMyPublicationById = async (data: CreateMyPublicationByIdRequest) =>
-	request<{ id: number }>(`/my/publications/add-by-id`, {
-		method: Method.POST,
-		json: data
-	});
 
 export const updateMyPublication = async (publicationId: number, data: PublicationRequest) =>
 	request(`/my/publications/${publicationId}`, {
