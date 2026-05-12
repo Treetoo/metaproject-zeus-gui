@@ -12,6 +12,7 @@ import { createMyPublication } from '@/modules/publication/api/my-publications';
 import { searchByResearcherId } from '@/modules/publication/api/search-by-researcher-id';
 import { useMyActiveProjectsQuery } from '@/modules/project/queries';
 import { getMyOrcid } from '@/modules/user/api/my-orcid';
+
 import { StakeholderSelectionModal } from './stakeholder-selection-modal';
 
 const schema = z.object({
@@ -95,6 +96,8 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 
 	const handleClose = () => {
 		form.reset();
+		setIsSearching(false);
+		setIsSubmitting(false);
 		setWorks([]);
 		setSelectedWorks([]);
 		setSelectedType('unknown');
@@ -179,7 +182,11 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 
 			for (const work of worksWithUniqueId) {
 				try {
-					const pubReq = { ...work, project: { projectId }, stakeholderIds: [] } as CreateMyPublicationRequest;
+					const pubReq = {
+						...work,
+						project: { projectId },
+						stakeholderIds: []
+					} as CreateMyPublicationRequest;
 					await createMyPublication(pubReq);
 					successCount++;
 				} catch (e) {
@@ -215,7 +222,11 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 
 		for (const work of pendingSelectedWorks) {
 			try {
-				const pubReq = { ...work, project: { projectId: pendingProjectId }, stakeholderIds } as CreateMyPublicationRequest;
+				const pubReq = {
+					...work,
+					project: { projectId: pendingProjectId },
+					stakeholderIds
+				} as CreateMyPublicationRequest;
 				await createMyPublication(pubReq);
 				successCount++;
 			} catch (e) {
