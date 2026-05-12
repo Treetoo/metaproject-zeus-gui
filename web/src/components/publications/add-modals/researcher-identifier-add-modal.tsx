@@ -118,7 +118,8 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 			if (status === 400) {
 				setForceTypeChange(true);
 				notifications.show({
-					message: 'Could not detect publication type automatically. Please select a type from the dropdown and try again.',
+					message:
+						'Could not detect publication type automatically. Please select a type from the dropdown and try again.',
 					color: 'orange'
 				});
 			} else if (status === 404) {
@@ -226,7 +227,7 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 
 	return (
 		<>
-			<Modal opened={opened} onClose={handleClose} title="Add publications by researcher ID" centered size="lg">
+			<Modal opened={opened} onClose={handleClose} title="Add publications by researcher ID" centered size="xxl">
 				<Stack>
 					<Group align="flex-end">
 						<Autocomplete
