@@ -163,28 +163,9 @@ export const AddManuallyModal = ({
 				}
 
 				const selectedProject = myProjects?.find(p => p.id === values.projectId);
-				if (selectedProject?.isPersonal) {
-					setPendingFormValues(values);
-					setPendingProjectId(values.projectId);
-					setShowStakeholderModal(true);
-				} else {
-					await createMyPublication({
-						...values,
-						source:
-							isFetchedMode && fetchedPublication?.source && fetchedPublication.source !== 'unknown'
-								? fetchedPublication.source
-								: isFetchedMode
-									? (sourceType as string)
-									: 'manual',
-						year: values.year as number,
-						project: { projectId: values.projectId },
-						creditors: [],
-						...(isFetchedMode && fetchedPublication ? { uniqueId: fetchedPublication.uniqueId } : {})
-					});
-					notifications.show({ message: 'Publication added', color: 'green' });
-					onSuccess();
-					handleClose();
-				}
+				setPendingFormValues(values);
+				setPendingProjectId(values.projectId);
+				setShowStakeholderModal(true);
 			}
 		} catch (error: any) {
 			const status = error?.response?.status || error?.status;
@@ -374,7 +355,7 @@ export const AddManuallyModal = ({
 					opened={showStakeholderModal}
 					onClose={() => setShowStakeholderModal(false)}
 					onSubmit={handleStakeholderSubmit}
-					description="This is a personal project. Select users who should be added as stakeholders to this publication."
+					description="Select users who should be added as stakeholders to this publication."
 				/>
 			)}
 		</>
