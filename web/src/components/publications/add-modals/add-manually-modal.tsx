@@ -4,12 +4,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal, Button, TextInput, Group, NumberInput, Select, Stack, Alert } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 
-import type { Publication } from '@/modules/publication/model';
+import type { Publication, PublicationSource } from '@/modules/publication/model';
 import { createMyPublication, updateMyPublication } from '@/modules/publication/api/my-publications';
 import { manualPublicationSchema, type ManualPublicationSchema } from '@/modules/publication/form';
 import { useMyActiveProjectsQuery } from '@/modules/project/queries';
+
 import { StakeholderSelectionModal } from './stakeholder-selection-modal';
-import { type PublicationSource } from '@/modules/publication/model';
 
 type AddManuallyModalProps = {
 	opened: boolean;
@@ -62,28 +62,28 @@ export const AddManuallyModal = ({
 			resolver: zodResolver(manualPublicationSchema),
 			defaultValues: isEditMode
 				? {
-						title: editPublication.title,
-						authors: editPublication.authors,
-						year: editPublication.year,
-						journal: editPublication.journal,
-						url: editPublication.url
-					}
+					title: editPublication.title,
+					authors: editPublication.authors,
+					year: editPublication.year,
+					journal: editPublication.journal,
+					url: editPublication.url
+				}
 				: isFetchedMode
 					? {
-							title: fetchedPublication.title,
-							authors: fetchedPublication.authors,
-							year: fetchedPublication.year,
-							journal: fetchedPublication.journal,
-							url: fetchedPublication.url
-						}
+						title: fetchedPublication.title,
+						authors: fetchedPublication.authors,
+						year: fetchedPublication.year,
+						journal: fetchedPublication.journal,
+						url: fetchedPublication.url
+					}
 					: {
-							title: '',
-							authors: '',
-							year: undefined,
-							journal: '',
-							url: '',
-							projectId: defaultProjectId ? Number(defaultProjectId) : undefined
-						}
+						title: '',
+						authors: '',
+						year: undefined,
+						journal: '',
+						url: '',
+						projectId: defaultProjectId ? Number(defaultProjectId) : undefined
+					}
 		});
 	const addForm = createForm();
 
@@ -119,7 +119,7 @@ export const AddManuallyModal = ({
 		}
 	}, [opened, isEditMode]);
 
-	const handleClose = () => {
+	const handleClose = (cancelSeq = false) => {
 		addForm.reset({
 			title: '',
 			authors: '',
@@ -128,11 +128,15 @@ export const AddManuallyModal = ({
 			url: '',
 			projectId: !isEditMode && defaultProjectId ? Number(defaultProjectId) : undefined
 		});
-		if (onCancelSequential) {
+		if (cancelSeq && onCancelSequential) {
 			onCancelSequential();
 		} else {
 			onClose();
 		}
+	};
+
+	const handleCloseSequential = () => {
+		handleClose(true);
 	};
 
 	const handleSubmit = addForm.handleSubmit(async (values: ManualPublicationSchema) => {
@@ -165,11 +169,12 @@ export const AddManuallyModal = ({
 				} else {
 					await createMyPublication({
 						...values,
-						source: isFetchedMode && fetchedPublication?.source && fetchedPublication.source !== 'unknown'
-							? fetchedPublication.source
-							: isFetchedMode
-								? (sourceType as string)
-								: 'manual',
+						source:
+							isFetchedMode && fetchedPublication?.source && fetchedPublication.source !== 'unknown'
+								? fetchedPublication.source
+								: isFetchedMode
+									? (sourceType as string)
+									: 'manual',
 						year: values.year as number,
 						project: { projectId: values.projectId },
 						stakeholderIds: [],
@@ -212,11 +217,12 @@ export const AddManuallyModal = ({
 		try {
 			await createMyPublication({
 				...pendingFormValues,
-				source: isFetchedMode && fetchedPublication?.source && fetchedPublication.source !== 'unknown'
-					? fetchedPublication.source
-					: isFetchedMode
-						? (sourceType as string)
-						: 'manual',
+				source:
+					isFetchedMode && fetchedPublication?.source && fetchedPublication.source !== 'unknown'
+						? fetchedPublication.source
+						: isFetchedMode
+							? (sourceType as string)
+							: 'manual',
 				year: pendingFormValues.year as number,
 				project: { projectId: pendingProjectId },
 				stakeholderIds,
@@ -344,7 +350,7 @@ export const AddManuallyModal = ({
 								Skip
 							</Button>
 						)}
-						<Button variant="default" type="button" onClick={handleClose}>
+						<Button variant="default" type="button" onClick={handleCloseSequential}>
 							Cancel
 						</Button>
 						<Button type="submit" loading={addForm.formState.isSubmitting}>

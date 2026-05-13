@@ -166,14 +166,14 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 
 	const handlePublicationAdded = async () => {
 		setAddedCount(prev => prev + 1);
-		setFetchedPublication(null);
 
 		if (currentWorkIndex < sequentialQueue.length - 1) {
 			// Move to next work
-			setCurrentWorkIndex(prev => prev + 1);
-			const nextWork = sequentialQueue[currentWorkIndex + 1];
+			const newIndex = currentWorkIndex + 1;
+			setCurrentWorkIndex(newIndex);
+			const nextWork = sequentialQueue[newIndex];
 
-			// Use the work data directly
+			// Set the next publication directly without clearing first
 			setFetchedPublication({
 				title: nextWork.title || '',
 				authors: nextWork.authors || '',
@@ -185,6 +185,7 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 			});
 		} else {
 			// Done with all works
+			setFetchedPublication(null);
 			notifications.show({
 				message: `Added ${addedCount + 1} publication(s) from ORCID`,
 				color: 'green'
@@ -196,13 +197,13 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 
 	const handlePublicationSkipped = async () => {
 		setSkippedCount(prev => prev + 1);
-		setFetchedPublication(null);
 
 		if (currentWorkIndex < sequentialQueue.length - 1) {
-			setCurrentWorkIndex(prev => prev + 1);
-			const nextWork = sequentialQueue[currentWorkIndex + 1];
+			const newIndex = currentWorkIndex + 1;
+			setCurrentWorkIndex(newIndex);
+			const nextWork = sequentialQueue[newIndex];
 
-			// Use the work data directly
+			// Set the next publication directly without clearing first
 			setFetchedPublication({
 				title: nextWork.title || '',
 				authors: nextWork.authors || '',
@@ -213,6 +214,7 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 				source: nextWork.source || (selectedType as any)
 			});
 		} else {
+			setFetchedPublication(null);
 			notifications.show({
 				message: `Finished. Added ${addedCount} publication(s), skipped ${skippedCount + 1}`,
 				color: 'blue'
