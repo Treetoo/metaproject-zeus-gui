@@ -39,6 +39,7 @@ export const CreditRequestDetail = ({
 			rejectMessage="Credit request rejected"
 			failureMessage="Failed to approve credit request"
 			queryKey={['publications', 'credit-requests']}
+			showWeight={false}
 			onApproved={onApproved}
 			onRejected={onRejected}
 			onApprove={handleApprove}

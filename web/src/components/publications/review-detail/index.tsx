@@ -20,6 +20,7 @@ export type ReviewDetailProps = {
 	rejectMessage: string;
 	failureMessage: string;
 	queryKey: string[];
+	showWeight?: boolean;
 	onApproved?: () => void;
 	onRejected?: () => void;
 	onApprove: ReviewAction;
@@ -36,6 +37,7 @@ export const ReviewDetail = ({
 	rejectMessage,
 	failureMessage,
 	queryKey,
+	showWeight = true,
 	onApproved,
 	onRejected,
 	onApprove,
@@ -169,15 +171,17 @@ export const ReviewDetail = ({
 
 				<form onSubmit={form.handleSubmit(handleApprove)}>
 					<Stack gap="md">
-						<NumberInput
-							label="Weight"
-							description="Assign a weight to this publication (optional)"
-							min={0}
-							max={100}
-							value={form.watch('weight')}
-							onChange={value => form.setValue('weight', value as number, { shouldValidate: true })}
-							error={form.formState.errors.weight?.message}
-						/>
+						{showWeight && (
+							<NumberInput
+								label="Weight"
+								description="Assign a weight to this publication (optional)"
+								min={0}
+								max={100}
+								value={form.watch('weight')}
+								onChange={value => form.setValue('weight', value as number, { shouldValidate: true })}
+								error={form.formState.errors.weight?.message}
+							/>
+						)}
 
 						<Textarea
 							rows={4}

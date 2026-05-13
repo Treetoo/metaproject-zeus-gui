@@ -159,7 +159,11 @@ export const AddManuallyModal = ({
 				} else {
 					await createMyPublication({
 						...values,
-						source: isFetchedMode ? (sourceType as string) : 'manual',
+						source: isFetchedMode && fetchedPublication?.source && fetchedPublication.source !== 'unknown'
+							? fetchedPublication.source
+							: isFetchedMode
+								? (sourceType as string)
+								: 'manual',
 						year: values.year as number,
 						project: { projectId: values.projectId },
 						stakeholderIds: [],
@@ -196,7 +200,11 @@ export const AddManuallyModal = ({
 		try {
 			await createMyPublication({
 				...pendingFormValues,
-				source: isFetchedMode ? (sourceType as string) : 'manual',
+				source: isFetchedMode && fetchedPublication?.source && fetchedPublication.source !== 'unknown'
+					? fetchedPublication.source
+					: isFetchedMode
+						? (sourceType as string)
+						: 'manual',
 				year: pendingFormValues.year as number,
 				project: { projectId: pendingProjectId },
 				stakeholderIds,
