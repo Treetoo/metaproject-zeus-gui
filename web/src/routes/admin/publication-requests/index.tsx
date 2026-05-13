@@ -2,16 +2,17 @@ import { Box, Button } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import React, { useState, useMemo } from 'react';
 import type { DataTableSortStatus } from 'mantine-datatable';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 
 import PageBreadcrumbs from '@/components/global/page-breadcrumbs';
-import type { Publication } from '@/modules/publication/model';
+import type { Publication, PublicationDetail } from '@/modules/publication/model';
 import { usePublicationRequestsQuery } from '@/modules/publication/queries';
 import { getSortQuery } from '@/modules/api/sorting/utils';
 import { getCurrentRole } from '@/modules/auth/methods/getCurrentRole';
 import { Role } from '@/modules/user/role';
 import { PublicationsTable } from '@/components/publications/publication-table';
 import { exportPublicationRequests } from '@/modules/publication/api/publication-export';
+import { getPublicationDetail } from '@/modules/publication/api/my-publications';
 
 import { PublicationApprovalDetail } from './detail';
 
@@ -63,6 +64,12 @@ const PublicationRequests = () => {
 		setSelectedPub(publication);
 		setDetailOpen(true);
 	};
+
+	const { data: detailData } = useQuery({
+		queryKey: ['publication', 'detail', selectedPub?.id],
+		queryFn: () => getPublicationDetail(selectedPub!.id),
+		enabled: detailOpen && !!selectedPub?.id
+	});
 
 	const queryClient = useQueryClient();
 	const handleActionComplete = async () => {
@@ -173,7 +180,7 @@ const PublicationRequests = () => {
 			<PublicationApprovalDetail
 				opened={detailOpen}
 				onClose={handleCloseDetail}
-				publication={selectedPub}
+				publication={detailData || selectedPub}
 				onApproved={handleActionComplete}
 				onRejected={handleActionComplete}
 			/>

@@ -2,16 +2,17 @@ import { Box, Button } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import React, { useState, useMemo } from 'react';
 import type { DataTableSortStatus } from 'mantine-datatable';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 
 import PageBreadcrumbs from '@/components/global/page-breadcrumbs';
-import type { Publication } from '@/modules/publication/model';
+import type { Publication, PublicationDetail } from '@/modules/publication/model';
 import { useCreditRequestsQuery } from '@/modules/publication/queries';
 import { getSortQuery } from '@/modules/api/sorting/utils';
 import { getCurrentRole } from '@/modules/auth/methods/getCurrentRole';
 import { Role } from '@/modules/user/role';
 import { PublicationsTable } from '@/components/publications/publication-table';
 import userManager from '@/modules/auth/config/user-manager';
+import { getPublicationDetail } from '@/modules/publication/api/my-publications';
 
 import { CreditRequestDetail } from './detail';
 
@@ -63,6 +64,12 @@ const CreditRequests = () => {
 		setSelectedPub(publication);
 		setDetailOpen(true);
 	};
+
+	const { data: detailData } = useQuery({
+		queryKey: ['publication', 'detail', selectedPub?.id],
+		queryFn: () => getPublicationDetail(selectedPub!.id),
+		enabled: detailOpen && !!selectedPub?.id
+	});
 
 	const queryClient = useQueryClient();
 	const handleActionComplete = async () => {
@@ -195,7 +202,7 @@ const CreditRequests = () => {
 			<CreditRequestDetail
 				opened={detailOpen}
 				onClose={handleCloseDetail}
-				publication={selectedPub}
+				publication={detailData || selectedPub}
 				onApproved={handleActionComplete}
 				onRejected={handleActionComplete}
 			/>

@@ -1,7 +1,7 @@
 import { Method } from '@/modules/api/model';
 import { request } from '@/modules/api/request';
 import type { PaginationResponse } from '@/modules/api/pagination/model';
-import type { Publication, PublicationSource } from '@/modules/publication/model';
+import type { Publication, PublicationSource, PublicationDetail } from '@/modules/publication/model';
 
 export type Project = {
 	projectId: number;
@@ -16,9 +16,15 @@ type PublicationRequest = {
 	uniqueId?: string;
 };
 
+export type CreditorInput = {
+	userId: number;
+	fairShareEligible: boolean;
+	isStakeholder: boolean;
+};
+
 export type CreateMyPublicationRequest = {
 	project: Project;
-	stakeholderIds?: number[];
+	creditors?: CreditorInput[];
 } & PublicationRequest;
 
 export type UpdateMyPublicationRequest = {} & PublicationRequest;
@@ -62,6 +68,10 @@ export const deleteMyPublication = async (publicationId: number) =>
 	request(`/my/publications/${publicationId}`, {
 		method: Method.DELETE
 	});
+
+export const getPublicationDetail = async (publicationId: number): Promise<PublicationDetail> => {
+	return request<PublicationDetail>(`/publications/approval/${publicationId}/detail`);
+};
 
 export const listMyCreditedPublications = async (
 	page: number,

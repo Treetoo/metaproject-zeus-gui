@@ -39,6 +39,8 @@ export const PublicationApprovalDetail = ({
 			rejectMessage="Publication rejected"
 			failureMessage="Failed to approve publication"
 			queryKey={['publications', 'approval', 'pending']}
+			showWeight
+			showDetails
 			onApproved={onApproved}
 			onRejected={onRejected}
 			onApprove={handleApprove}

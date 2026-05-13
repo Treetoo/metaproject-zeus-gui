@@ -23,3 +23,35 @@ export type Publication = {
 	// Only populated for credited publications tab
 	creditStatus?: 'pending' | 'approved' | 'rejected';
 };
+
+export type Creditor = {
+	userId: number;
+	username: string;
+	name: string;
+	email: string;
+	status: 'pending' | 'approved' | 'rejected';
+};
+
+export type Stakeholder = {
+	userId: number;
+	username: string;
+	name: string;
+	email: string;
+	status?: 'pending' | 'approved' | 'rejected';
+};
+
+export type PublicationDetail = Publication & {
+	project?: { id: number; title: string } | null;
+	creditors?: Creditor[];
+	stakeholders?: Stakeholder[];
+	requestedBy?: number;
+	ownerId?: number;
+	ownerName?: string;
+	ownerUsername?: string;
+	ownerEmail?: string;
+	reviewerId?: number;
+	reviewedAt?: EpochTimeStamp;
+	weight?: number;
+	createdAt?: string;
+	updatedAt?: string;
+};

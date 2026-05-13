@@ -5,11 +5,11 @@ import { Modal, Button, TextInput, Group, NumberInput, Select, Stack, Alert } fr
 import { notifications } from '@mantine/notifications';
 
 import type { Publication, PublicationSource } from '@/modules/publication/model';
-import { createMyPublication, updateMyPublication } from '@/modules/publication/api/my-publications';
+import { createMyPublication, updateMyPublication, type CreditorInput } from '@/modules/publication/api/my-publications';
 import { manualPublicationSchema, type ManualPublicationSchema } from '@/modules/publication/form';
 import { useMyActiveProjectsQuery } from '@/modules/project/queries';
 
-import { StakeholderSelectionModal } from './stakeholder-selection-modal';
+import { StakeholderSelectionModal, type SelectedStakeholder } from './stakeholder-selection-modal';
 
 type AddManuallyModalProps = {
 	opened: boolean;
@@ -47,6 +47,7 @@ export const AddManuallyModal = ({
 	const [showStakeholderModal, setShowStakeholderModal] = useState(false);
 	const [pendingFormValues, setPendingFormValues] = useState<ManualPublicationSchema | null>(null);
 	const [pendingProjectId, setPendingProjectId] = useState<number | null>(null);
+	const [pendingStakeholders, setPendingStakeholders] = useState<{ userId: number; fairShareEligible: boolean }[]>([]);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const defaultProjectId = useMemo(() => {
@@ -177,7 +178,7 @@ export const AddManuallyModal = ({
 									: 'manual',
 						year: values.year as number,
 						project: { projectId: values.projectId },
-						stakeholderIds: [],
+						creditors: [],
 						...(isFetchedMode && fetchedPublication ? { uniqueId: fetchedPublication.uniqueId } : {})
 					});
 					notifications.show({ message: 'Publication added', color: 'green' });
@@ -211,9 +212,17 @@ export const AddManuallyModal = ({
 		}
 	});
 
-	const handleStakeholderSubmit = async (stakeholderIds: number[]) => {
+	const handleStakeholderSubmit = async (selectedStakeholders: SelectedStakeholder[]) => {
 		if (!pendingFormValues || !pendingProjectId) return;
 
+
+		// Transform SelectedStakeholder[] to CreditorInput[]
+		// All selected users become creditors, and those with fairShareEligible=true also become stakeholders
+		const creditors: CreditorInput[] = selectedStakeholders.map((s) => ({
+			userId: s.userId,
+			fairShareEligible: s.fairShareEligible,
+			isStakeholder: s.fairShareEligible
+		}));
 		try {
 			await createMyPublication({
 				...pendingFormValues,
@@ -225,12 +234,12 @@ export const AddManuallyModal = ({
 							: 'manual',
 				year: pendingFormValues.year as number,
 				project: { projectId: pendingProjectId },
-				stakeholderIds,
+				creditors,
 				...(isFetchedMode && fetchedPublication ? { uniqueId: fetchedPublication.uniqueId } : {})
 			});
 
 			notifications.show({
-				message: `Publication added${stakeholderIds.length > 0 ? ` with ${stakeholderIds.length} stakeholder(s)` : ''}`,
+				message: `Publication added${creditors.length > 0 ? ` with ${creditors.length} creditor(s)` : ''}`,
 				color: 'green'
 			});
 

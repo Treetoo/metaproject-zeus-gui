@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Modal, Stack, Text, Group, Button, NumberInput, Badge, Box, Divider, Anchor, Textarea } from '@mantine/core';
+import { Modal, Stack, Text, Group, Button, NumberInput, Badge, Box, Divider, Anchor, Textarea, SimpleGrid } from '@mantine/core';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { notifications } from '@mantine/notifications';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { type ApprovalFormData, approvalSchema } from '@/modules/publication/approval-form';
-import { type Publication } from '@/modules/publication/model';
+import { type Publication, type PublicationDetail, type Creditor, type Stakeholder } from '@/modules/publication/model';
 
 type ReviewAction = (data: ApprovalFormData) => Promise<void>;
 
@@ -21,11 +21,29 @@ export type ReviewDetailProps = {
 	failureMessage: string;
 	queryKey: string[];
 	showWeight?: boolean;
+	showDetails?: boolean;
 	onApproved?: () => void;
 	onRejected?: () => void;
 	onApprove: ReviewAction;
 	onReject: ReviewAction;
 };
+
+const StatusBadge = ({ status }: { status: 'pending' | 'approved' | 'rejected' }) => {
+	const colorMap = {
+		pending: 'yellow',
+		approved: 'green',
+		rejected: 'red'
+	};
+	return <Badge color={colorMap[status]} size="sm">{status}</Badge>;
+};
+
+const InfoItem = ({ label, value, subValue }: { label: string; value: string | React.ReactNode; subValue?: string }) => (
+	<Box>
+		<Text size="xs" c="dimmed" mb={2}>{label}</Text>
+		<Text size="sm" fw={500}>{value}</Text>
+		{subValue && <Text size="xs" c="dimmed">{subValue}</Text>}
+	</Box>
+);
 
 export const ReviewDetail = ({
 	opened,
@@ -38,6 +56,7 @@ export const ReviewDetail = ({
 	failureMessage,
 	queryKey,
 	showWeight = true,
+	showDetails = false,
 	onApproved,
 	onRejected,
 	onApprove,
@@ -54,6 +73,8 @@ export const ReviewDetail = ({
 	if (!publication) {
 		return null;
 	}
+
+	const pubDetail = publication as PublicationDetail;
 
 	const handleApprove = async (data: ApprovalFormData) => {
 		if (!publication.id) return;
@@ -108,64 +129,96 @@ export const ReviewDetail = ({
 	};
 
 	return (
-		<Modal opened={opened} onClose={onClose} title={`Review ${title}`} size="lg" centered>
+		<Modal opened={opened} onClose={onClose} title={`Review ${title}`} size="xl" centered>
 			<Stack gap="md">
-				<Box>
-					<Text size="sm" c="dimmed" mb={4}>
-						Title
-					</Text>
-					<Text fw={500} size="lg">
-						{publication.title}
-					</Text>
-				</Box>
+				{/* Essential Info - Project and Owner at the top */}
+				{showDetails && (pubDetail.project || pubDetail.ownerId) && (
+					<SimpleGrid cols={2} breakpoints={[{ maxWidth: 'sm', cols: 1 }]}>
+						{pubDetail.project && <InfoItem label="Project" value={pubDetail.project.title} />}
+						{pubDetail.ownerId && (
+							<InfoItem
+								label="Requested By (Owner)"
+								value={pubDetail.ownerName || 'Unknown'}
+								subValue={`@${pubDetail.ownerUsername || ''} | ${pubDetail.ownerEmail || ''}`}
+							/>
+						)}
+					</SimpleGrid>
+				)}
+
+				<Divider my="sm" />
+
+				{/* Main Publication Info - 2 columns */}
+				<SimpleGrid cols={2} breakpoints={[{ maxWidth: 'sm', cols: 1 }]}>
+					<InfoItem label="Title" value={publication.title} />
+					<InfoItem
+						label="Status"
+						value={<Badge color="yellow" size="sm">{(publication as any).creditStatus || publication.status || 'pending'}</Badge>}
+					/>
+				</SimpleGrid>
 
 				<Box>
-					<Text size="sm" c="dimmed" mb={4}>
-						Link
-					</Text>
-					<Anchor href={publication.url} target="_blank" rel="noopener noreferrer" size="lg">
+					<Text size="xs" c="dimmed" mb={2}>Link</Text>
+					<Anchor href={publication.url} target="_blank" rel="noopener noreferrer" size="sm">
 						{publication.url}
 					</Anchor>
 				</Box>
 
-				<Group grow>
-					<Box>
-						<Text size="sm" c="dimmed" mb={4}>
-							Authors
-						</Text>
-						<Text>{publication.authors}</Text>
-					</Box>
-					<Box>
-						<Text size="sm" c="dimmed" mb={4}>
-							Year
-						</Text>
-						<Text>{publication.year}</Text>
-					</Box>
-				</Group>
+				<SimpleGrid cols={2} breakpoints={[{ maxWidth: 'sm', cols: 1 }]}>
+					<InfoItem label="Authors" value={publication.authors} />
+					<InfoItem label="Year" value={String(publication.year)} />
+				</SimpleGrid>
 
-				<Group grow>
-					<Box>
-						<Text size="sm" c="dimmed" mb={4}>
-							Journal
-						</Text>
-						<Text>{publication.journal}</Text>
-					</Box>
-					<Box>
-						<Text size="sm" c="dimmed" mb={4}>
-							DOI/Unique ID
-						</Text>
-						<Text>{publication.uniqueId}</Text>
-					</Box>
-				</Group>
+				<SimpleGrid cols={2} breakpoints={[{ maxWidth: 'sm', cols: 1 }]}>
+					<InfoItem label="Journal" value={publication.journal} />
+					<InfoItem label="DOI/Unique ID" value={publication.uniqueId} />
+				</SimpleGrid>
 
-				<Box>
-					<Text size="sm" c="dimmed" mb={4}>
-						{statusLabel}
-					</Text>
-					<Badge color="yellow" size="lg">
-						{(publication as any).creditStatus || publication.status || 'pending'}
-					</Badge>
-				</Box>
+				{/* Creditors and Stakeholders */}
+				{showDetails && (pubDetail.creditors?.length || pubDetail.stakeholders?.length) && (
+					<>
+						<Divider my="sm" />
+
+						<SimpleGrid cols={2} breakpoints={[{ maxWidth: 'md', cols: 1 }]}>
+							{pubDetail.creditors && pubDetail.creditors.length > 0 && (
+								<Box>
+									<Text size="sm" fw={600} mb={6}>Creditors</Text>
+									<Stack gap={4}>
+										{pubDetail.creditors.map((creditor: Creditor) => (
+											<Box key={creditor.userId} p={6} style={{ background: 'var(--mantine-color-gray-0)', borderRadius: 4 }}>
+												<Group justify="space-between" gap="xs">
+													<div style={{ flex: 1 }}>
+														<Text size="sm" fw={500}>{creditor.name}</Text>
+														<Text size="xs" c="dimmed">@{creditor.username} | {creditor.email}</Text>
+													</div>
+													<StatusBadge status={creditor.status} />
+												</Group>
+											</Box>
+										))}
+									</Stack>
+								</Box>
+							)}
+
+							{pubDetail.stakeholders && pubDetail.stakeholders.length > 0 && (
+								<Box>
+									<Text size="sm" fw={600} mb={6}>Stakeholders</Text>
+									<Stack gap={4}>
+										{pubDetail.stakeholders.map((stakeholder: Stakeholder) => (
+											<Box key={stakeholder.userId} p={6} style={{ background: 'var(--mantine-color-gray-0)', borderRadius: 4 }}>
+												<Group justify="space-between" gap="xs">
+													<div style={{ flex: 1 }}>
+														<Text size="sm" fw={500}>{stakeholder.name}</Text>
+														<Text size="xs" c="dimmed">@{stakeholder.username} | {stakeholder.email}</Text>
+													</div>
+													{stakeholder.status ? <StatusBadge status={stakeholder.status} /> : null}
+												</Group>
+											</Box>
+										))}
+									</Stack>
+								</Box>
+							)}
+						</SimpleGrid>
+					</>
+				)}
 
 				<Divider my="sm" />
 
@@ -178,21 +231,19 @@ export const ReviewDetail = ({
 								min={0}
 								max={100}
 								value={form.watch('weight')}
-								onChange={value => form.setValue('weight', value as number, { shouldValidate: true })}
+								onChange={(value) => form.setValue('weight', value as number, { shouldValidate: true })}
 								error={form.formState.errors.weight?.message}
 							/>
 						)}
 
 						<Textarea
-							rows={4}
+							rows={3}
 							autosize
-							maxRows={8}
+							maxRows={6}
 							label="Reviewers note"
 							description="Explains why the request was not approved"
 							value={form.watch('reviewerNote')}
-							onChange={event =>
-								form.setValue('reviewerNote', event.currentTarget.value, { shouldValidate: true })
-							}
+							onChange={(event) => form.setValue('reviewerNote', event.currentTarget.value, { shouldValidate: true })}
 							error={form.formState.errors.reviewerNote?.message}
 						/>
 						<Group justify="flex-end" mt="md">

@@ -1,14 +1,26 @@
 import { useState, useEffect } from 'react';
-import { Modal, Button, Group, MultiSelect, Stack, Text, Alert } from '@mantine/core';
-import { IconInfoCircle } from '@tabler/icons-react';
+import { Modal, Button, Group, Select, Stack, Text, Alert, Checkbox, ActionIcon, Table } from '@mantine/core';
+import { IconInfoCircle, IconX } from '@tabler/icons-react';
 
-import { searchUsers } from '@/modules/user/api/search-users';
+import { searchUsers, getCurrentUser } from '@/modules/user/api/search-users';
 import type { UserInfo } from '@/modules/user/model';
+
+type SelectedUser = {
+	id: number;
+	name: string;
+	username: string;
+	fairShareEligible: boolean;
+};
+
+export type SelectedStakeholder = {
+	userId: number;
+	fairShareEligible: boolean;
+};
 
 type StakeholderSelectionModalProps = {
 	opened: boolean;
 	onClose: () => void;
-	onSubmit: (stakeholderIds: number[]) => Promise<void>;
+	onSubmit: (data: SelectedStakeholder[]) => Promise<void>;
 	title?: string;
 	description?: string;
 };
@@ -20,10 +32,37 @@ export const StakeholderSelectionModal = ({
 	title,
 	description
 }: StakeholderSelectionModalProps) => {
-	const [selectedStakeholders, setSelectedStakeholders] = useState<string[]>([]);
-	const [userOptions, setUserOptions] = useState<{ value: string; label: string }[]>([]);
+	const [selectedUsers, setSelectedUsers] = useState<SelectedUser[]>([]);
+	const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
+	const [userOptions, setUserOptions] = useState<{ value: string; label: string; id: number }[]>([]);
 	const [isSearching, setIsSearching] = useState(false);
 	const [searchQuery, setSearchQuery] = useState('');
+
+	// Fetch current user and pre-select them when modal opens
+	useEffect(() => {
+		if (opened) {
+			const fetchCurrentUser = async () => {
+				try {
+					const user = await getCurrentUser();
+					setCurrentUser(user);
+					setSelectedUsers([
+						{
+							id: user.id,
+							name: user.name,
+							username: user.username,
+							fairShareEligible: true
+						}
+					]);
+				} catch (error) {
+					console.error('Error fetching current user:', error);
+				}
+			};
+			fetchCurrentUser();
+		} else {
+			setCurrentUser(null);
+			setSelectedUsers([]);
+		}
+	}, [opened]);
 
 	// Fetch users when search query changes (debounced)
 	useEffect(() => {
@@ -36,10 +75,13 @@ export const StakeholderSelectionModal = ({
 			setIsSearching(true);
 			try {
 				const users = await searchUsers(searchQuery);
-				const options = users.map((user: UserInfo) => ({
-					value: String(user.id),
-					label: `${user.name} (${user.username})`
-				}));
+				const options = users
+					.filter((user: UserInfo) => !selectedUsers.some((u) => u.id === user.id))
+					.map((user: UserInfo) => ({
+						value: String(user.id),
+						label: `${user.name} (${user.username})`,
+						id: user.id
+					}));
 				setUserOptions(options);
 			} catch (error) {
 				console.error('Error searching users:', error);
@@ -51,14 +93,46 @@ export const StakeholderSelectionModal = ({
 
 		const timeoutId = setTimeout(fetchUsers, 300);
 		return () => clearTimeout(timeoutId);
-	}, [searchQuery]);
+	}, [searchQuery, selectedUsers]);
+
+	const handleUserSelect = (value: string) => {
+		if (!value) return;
+		const selectedOption = userOptions.find((opt) => opt.value === value);
+		if (selectedOption && !selectedUsers.some((u) => u.id === selectedOption.id)) {
+			setSelectedUsers([
+				...selectedUsers,
+				{
+					id: selectedOption.id,
+					name: selectedOption.label.split(' (')[0],
+					username: selectedOption.label.split(' (')[1]?.replace(')', '') || '',
+					fairShareEligible: true
+				}
+			]);
+		}
+		setSearchQuery('');
+		setUserOptions([]);
+	};
+
+	const handleRemoveUser = (userId: number) => {
+		setSelectedUsers(selectedUsers.filter((u) => u.id !== userId));
+	};
+
+	const handleFairShareChange = (userId: number, checked: boolean) => {
+		setSelectedUsers(selectedUsers.map((u) => (u.id === userId ? { ...u, fairShareEligible: checked } : u)));
+	};
 
 	const handleSubmit = async () => {
-		const stakeholderIds = selectedStakeholders.map(id => parseInt(id));
-		await onSubmit(stakeholderIds);
+		const data = selectedUsers.map((u) => ({
+			userId: u.id,
+			fairShareEligible: u.fairShareEligible
+		}));
+		await onSubmit(data);
 	};
 
 	const handleCancel = () => {
+		setSelectedUsers([]);
+		setCurrentUser(null);
+		setSearchQuery('');
 		onClose();
 	};
 
@@ -68,7 +142,7 @@ export const StakeholderSelectionModal = ({
 			onClose={handleCancel}
 			title={title || 'Add Stakeholders'}
 			centered
-			size="md"
+			size="lg"
 			closeOnClickOutside={false}
 			withCloseButton={false}
 		>
@@ -79,15 +153,60 @@ export const StakeholderSelectionModal = ({
 				</Text>
 				<Alert icon={<IconInfoCircle />} color="orange" title="Important">
 					This is your only chance to add stakeholders. Once the publication is created, you cannot add
-					stakeholders later.
+					stakeholders later. Being in the table means you are an author of this publication.
 				</Alert>
 
-				<MultiSelect
-					label="Select stakeholders"
+				<Text size="sm" fw={500}>
+					Selected Stakeholders ({selectedUsers.length})
+				</Text>
+				<Table striped highlightOnHover withTableBorder>
+					<Table.Thead>
+						<Table.Tr>
+							<Table.Th style={{ width: '40%' }}>Name</Table.Th>
+							<Table.Th style={{ width: '30%' }}>Fair Share Eligible</Table.Th>
+							<Table.Th style={{ width: '15%' }}>Actions</Table.Th>
+						</Table.Tr>
+					</Table.Thead>
+					<Table.Tbody>
+						{selectedUsers.map((user) => (
+							<Table.Tr key={user.id}>
+								<Table.Td>
+									<div>
+										<Text size="sm" fw={500}>
+											{user.name}
+										</Text>
+										<Text size="xs" c="dimmed">
+											@{user.username}
+										</Text>
+									</div>
+								</Table.Td>
+								<Table.Td>
+									<Checkbox
+										checked={user.fairShareEligible}
+										onChange={(event) => handleFairShareChange(user.id, event.currentTarget.checked)}
+										size="md"
+									/>
+								</Table.Td>
+								<Table.Td>
+									<ActionIcon
+										color="red"
+										variant="subtle"
+										onClick={() => handleRemoveUser(user.id)}
+										title="Remove from stakeholders"
+									>
+										<IconX size={18} />
+									</ActionIcon>
+								</Table.Td>
+							</Table.Tr>
+						))}
+					</Table.Tbody>
+				</Table>
+
+				<Select
+					label="Search and add users"
 					placeholder="Start typing to search users (min 3 characters)"
 					data={userOptions}
-					value={selectedStakeholders}
-					onChange={setSelectedStakeholders}
+					onChange={handleUserSelect}
 					searchValue={searchQuery}
 					onSearchChange={setSearchQuery}
 					searchable
@@ -105,8 +224,8 @@ export const StakeholderSelectionModal = ({
 					<Button variant="default" onClick={handleCancel}>
 						Cancel
 					</Button>
-					<Button onClick={handleSubmit}>
-						Add{selectedStakeholders.length > 0 ? ` (+${selectedStakeholders.length})` : ''}
+					<Button onClick={handleSubmit} disabled={selectedUsers.length === 0}>
+						Create Publication ({selectedUsers.length})
 					</Button>
 				</Group>
 			</Stack>
