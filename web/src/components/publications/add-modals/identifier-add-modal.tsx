@@ -27,7 +27,8 @@ const TYPE_OPTIONS: TypeOption[] = [
 	{ value: 'pubmed', label: 'PMID' },
 	{ value: 'isbn', label: 'ISBN' },
 	{ value: 'nma', label: 'NMA' },
-	{ value: 'arxiv', label: 'arXiv' }
+	{ value: 'arxiv', label: 'arXiv' },
+	{ value: 'openalex', label: 'OpenAlex Work ID' }
 ];
 
 export const IdentifierAddModal = ({

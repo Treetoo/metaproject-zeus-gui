@@ -1,4 +1,4 @@
-export type PublicationSource = 'doi' | 'manual' | 'arxiv' | 'nma' | 'isbn' | 'pubmed' | 'pub_openalex' | 'unknown';
+export type PublicationSource = 'doi' | 'manual' | 'arxiv' | 'nma' | 'isbn' | 'pubmed' | 'pub_openalex' | 'openalex' | 'unknown';
 export type ResearcherIdType = 'orcid' | 'res_openalex' | 'unknown';
 
 export type Project = {
