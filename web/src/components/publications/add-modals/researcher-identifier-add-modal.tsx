@@ -160,7 +160,7 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 			journal: firstWork.journal || '',
 			url: firstWork.url || '',
 			uniqueId: firstWork.uniqueId,
-			source: selectedType as any
+			source: firstWork.source || (selectedType as any)
 		});
 	};
 
@@ -181,7 +181,7 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 				journal: nextWork.journal || '',
 				url: nextWork.url || '',
 				uniqueId: nextWork.uniqueId,
-				source: selectedType as any
+				source: nextWork.source || (selectedType as any)
 			});
 		} else {
 			// Done with all works
@@ -210,7 +210,7 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 				journal: nextWork.journal || '',
 				url: nextWork.url || '',
 				uniqueId: nextWork.uniqueId,
-				source: selectedType as any
+				source: nextWork.source || (selectedType as any)
 			});
 		} else {
 			notifications.show({
@@ -308,6 +308,13 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 					sourceType={selectedType as any}
 					allowSkip
 					onSkip={handlePublicationSkipped}
+					onCancelSequential={() => {
+						setIsSequentialMode(false);
+						setFetchedPublication(null);
+						setSequentialQueue([]);
+						setCurrentWorkIndex(0);
+						handleClose();
+					}}
 				/>
 			)}
 		</>

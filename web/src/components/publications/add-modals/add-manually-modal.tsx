@@ -20,6 +20,7 @@ type AddManuallyModalProps = {
 	sourceType?: PublicationSource | null;
 	allowSkip?: boolean;
 	onSkip?: () => void;
+	onCancelSequential?: () => void;
 };
 
 export const AddManuallyModal = ({
@@ -30,7 +31,8 @@ export const AddManuallyModal = ({
 	fetchedPublication,
 	sourceType,
 	allowSkip,
-	onSkip
+	onSkip,
+	onCancelSequential
 }: AddManuallyModalProps) => {
 	const { data: myProjects, isPending: isProjectsPending } = useMyActiveProjectsQuery();
 
@@ -126,7 +128,11 @@ export const AddManuallyModal = ({
 			url: '',
 			projectId: !isEditMode && defaultProjectId ? Number(defaultProjectId) : undefined
 		});
-		onClose();
+		if (onCancelSequential) {
+			onCancelSequential();
+		} else {
+			onClose();
+		}
 	};
 
 	const handleSubmit = addForm.handleSubmit(async (values: ManualPublicationSchema) => {
@@ -182,15 +188,21 @@ export const AddManuallyModal = ({
 					message: 'This publication already exists in the system.',
 					color: 'orange'
 				});
+				if (onSkip) {
+					onSkip();
+				} else {
+					handleClose();
+				}
 			} else if (status === 403) {
 				notifications.show({
 					message: 'This publication cannot be modified because it has already been approved.',
 					color: 'orange'
 				});
+				handleClose();
 			} else {
 				notifications.show({ message: 'Failed to save publication. Please try again.', color: 'red' });
+				handleClose();
 			}
-			handleClose();
 		}
 	});
 
@@ -229,6 +241,15 @@ export const AddManuallyModal = ({
 					message: 'This publication already exists in the system.',
 					color: 'orange'
 				});
+				setShowStakeholderModal(false);
+				setPendingFormValues(null);
+				setPendingProjectId(null);
+				if (onSkip) {
+					onSkip();
+				} else {
+					handleClose();
+				}
+				return;
 			} else if (status === 403) {
 				notifications.show({
 					message: 'This publication cannot be modified because it has already been approved.',
