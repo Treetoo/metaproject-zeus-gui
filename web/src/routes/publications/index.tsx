@@ -19,10 +19,11 @@ import {
 	useMyPublicationsQuery,
 	useMyCreditedPublicationsQuery,
 	useMyStakeholderPublicationsQuery,
-	useRequestCreditMutation
+	useRequestCreditMutation,
+	useAllPublicationsWithCreditQuery
 } from '@/modules/publication/my-queries';
-import { usePublicationRequestsQuery } from '@/modules/publication/queries';
 import type { Publication } from '@/modules/publication/model';
+import type { PublicationWithCreditStatus } from '@/modules/publication/api/my-publications';
 
 type FilterType = 'all' | 'pending' | 'approved' | 'rejected';
 type ModalType = 'manual' | 'pubId' | 'researcherId' | 'detail' | null;
@@ -101,7 +102,12 @@ const MyPublicationsPage = () => {
 		stakeholderFilter,
 		stakeholderSearch
 	);
-	const allQuery = usePublicationRequestsQuery({ page: allPage, limit: allLimit }, allSortQuery, allFilter);
+	const allQuery = useAllPublicationsWithCreditQuery(
+		{ page: allPage, limit: allLimit },
+		allSortQuery,
+		allFilter,
+		allSearch
+	);
 
 	const deleteMutation = useDeleteMyPublicationMutation();
 	const requestCreditMutation = useRequestCreditMutation();
@@ -163,6 +169,38 @@ const MyPublicationsPage = () => {
 				notifications.show({ message: 'Failed to send credit request. Please try again.', color: 'red' });
 			}
 		}
+	};
+
+	const renderCreditStatusBadge = (creditStatus: 'approved' | 'pending' | 'rejected') => {
+		if (creditStatus === 'approved') {
+			return <Badge color="green">Approved</Badge>;
+		} else if (creditStatus === 'pending') {
+			return <Badge color="orange">Pending</Badge>;
+		} else if (creditStatus === 'rejected') {
+			return <Badge color="red">Rejected</Badge>;
+		}
+	};
+
+	const renderAllTabActions = (pub: PublicationWithCreditStatus) => {
+		const hasCreditRequest = pub.creditStatus !== null;
+
+		return (
+			<Group gap={8} justify="flex-end">
+				{hasCreditRequest ? (
+					renderCreditStatusBadge(pub.creditStatus as 'approved' | 'pending' | 'rejected')
+				) : (
+					<Button
+						size="xs"
+						variant="outline"
+						color="blue"
+						onClick={() => handleRequestCredit(pub)}
+						disabled={requestCreditMutation.isPending}
+					>
+						Ask for credit
+					</Button>
+				)}
+			</Group>
+		);
 	};
 
 	return (
@@ -386,19 +424,7 @@ const MyPublicationsPage = () => {
 						}}
 						search={allSearch}
 						onSearchChange={setAllSearch}
-						renderActions={pub => (
-							<Group gap={8} justify="flex-end">
-								<Button
-									size="xs"
-									variant="outline"
-									color="blue"
-									onClick={() => handleRequestCredit(pub)}
-									disabled={requestCreditMutation.isPending}
-								>
-									Ask for credit
-								</Button>
-							</Group>
-						)}
+						renderActions={renderAllTabActions}
 					/>
 				</Tabs.Panel>
 			</Tabs>

@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { Pagination } from '@/modules/api/pagination/model';
 import type { Publication } from '@/modules/publication/model';
+import type { PublicationWithCreditStatus } from '@/modules/publication/api/my-publications';
 import {
 	assignMyPublicationToProject,
 	CreateMyPublicationRequest,
@@ -9,7 +10,8 @@ import {
 	updateMyPublication,
 	listMyCreditedPublications,
 	listMyStakeholderPublications,
-	requestCredit
+	requestCredit,
+	listAllPublicationsWithCredit
 } from '@/modules/publication/api/my-publications';
 
 export const useMyPublicationsQuery = (
@@ -65,4 +67,25 @@ export const useDeleteMyPublicationMutation = () =>
 export const useRequestCreditMutation = () =>
 	useMutation({
 		mutationFn: (publicationId: number) => requestCredit(publicationId)
+	});
+
+export const useAllPublicationsWithCreditQuery = (
+	pagination: Pagination,
+	sortSelector: string,
+	status?: string,
+	search?: string
+) =>
+	useQuery({
+		queryKey: [
+			'all',
+			'publications',
+			'with-credit',
+			pagination.page,
+			pagination.limit,
+			sortSelector,
+			status,
+			search
+		],
+		queryFn: () =>
+			listAllPublicationsWithCredit(pagination.page, pagination.limit, sortSelector, status, search)
 	});

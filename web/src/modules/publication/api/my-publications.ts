@@ -101,3 +101,24 @@ export const requestCredit = async (publicationId: number) =>
 	request(`/my/publications/credit-request/${publicationId}`, {
 		method: Method.POST
 	});
+
+export type PublicationWithCreditStatus = Publication & {
+	creditStatus: 'approved' | 'pending' | 'rejected' | null;
+};
+
+export const listAllPublicationsWithCredit = async (
+	page: number,
+	limit: number,
+	sortSelector: string,
+	status?: string,
+	search?: string
+) => {
+	const params = new URLSearchParams({ page: String(page), limit: String(limit), sort: sortSelector });
+	if (status && status !== 'all') {
+		params.set('status', status);
+	}
+	if (search?.trim()) {
+		params.set('search', search.trim());
+	}
+	return request<PaginationResponse<PublicationWithCreditStatus>>(`/my/publications/all-with-credit?${params}`);
+};
