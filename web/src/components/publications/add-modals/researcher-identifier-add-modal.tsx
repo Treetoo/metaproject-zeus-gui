@@ -23,7 +23,7 @@ type TypeOption = {
 const TYPE_OPTIONS: TypeOption[] = [
 	{ value: 'orcid', label: 'ORCID iD' },
 	{ value: 'res_openalex', label: 'OpenAlex researcher ID' },
-	{ value: 'unknown', label: 'Auto Detect' }
+	{ value: 'auto', label: 'Auto Detect' }
 ];
 
 export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: ResearcherIdentifierAddModalProps) => {

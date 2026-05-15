@@ -6,7 +6,7 @@ import { request } from '@/modules/api/request';
 export const searchByPubId = async (id: string, type: string) => {
 	try {
 		return request<Publication>(
-			`/publication-search/publication-id/${encodeURIComponent(id)}/${encodeURIComponent(type)}`
+			`/publication-search/publication-id/${encodeURIComponent(type)}/${encodeURIComponent(id)}`
 		);
 	} catch (e) {
 		if (e instanceof HTTPError && e.response.status === 404) {

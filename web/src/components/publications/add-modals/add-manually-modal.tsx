@@ -208,7 +208,7 @@ export const AddManuallyModal = ({
 			await createMyPublication({
 				...pendingFormValues,
 				source:
-					isFetchedMode && fetchedPublication?.source && fetchedPublication.source !== 'unknown'
+					isFetchedMode && fetchedPublication?.source && fetchedPublication.source !== 'auto'
 						? fetchedPublication.source
 						: isFetchedMode
 							? (sourceType as string)

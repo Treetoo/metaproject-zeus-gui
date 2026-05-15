@@ -22,7 +22,7 @@ type TypeOption = {
 	label: string;
 };
 const TYPE_OPTIONS: TypeOption[] = [
-	{ value: 'unknown', label: 'Auto Detect' },
+	{ value: 'auto', label: 'Auto Detect' },
 	{ value: 'doi', label: 'DOI' },
 	{ value: 'pubmed', label: 'PMID' },
 	{ value: 'isbn', label: 'ISBN' },
@@ -39,7 +39,7 @@ export const IdentifierAddModal = ({
 	label,
 	placeholder
 }: IdentifierAddModalProps) => {
-	const [selectedType, setSelectedType] = useState<PublicationSource>('unknown');
+	const [selectedType, setSelectedType] = useState<PublicationSource>('auto');
 	const [forceTypeChange, setForceTypeChange] = useState(false);
 	const [inputId, setInputId] = useState('');
 	const [fetchedPublication, setFetchedPublication] = useState<Publication | null>(null);
@@ -48,7 +48,7 @@ export const IdentifierAddModal = ({
 	useEffect(() => {
 		if (opened) {
 			setInputId('');
-			setSelectedType('unknown');
+			setSelectedType('auto');
 			setForceTypeChange(false);
 			setFetchedPublication(null);
 		}
@@ -56,7 +56,7 @@ export const IdentifierAddModal = ({
 
 	const handleClose = () => {
 		setInputId('');
-		setSelectedType('unknown');
+		setSelectedType('auto');
 		setForceTypeChange(false);
 		setFetchedPublication(null);
 		onClose();
@@ -69,7 +69,7 @@ export const IdentifierAddModal = ({
 			return;
 		}
 
-		if (forceTypeChange && selectedType === 'unknown') {
+		if (forceTypeChange && selectedType === 'auto') {
 			notifications.show({
 				message: 'Previous attempt failed. Please select a specific type from the dropdown or cancel.',
 				color: 'orange'
@@ -87,7 +87,8 @@ export const IdentifierAddModal = ({
 			if (status === 400) {
 				setForceTypeChange(true);
 				notifications.show({
-					message: 'Could not detect publication type automatically. Please select a type from the dropdown and try again.',
+					message:
+						'Could not detect publication type automatically. Please select a type from the dropdown and try again.',
 					color: 'orange'
 				});
 			} else if (status === 404) {
@@ -125,13 +126,13 @@ export const IdentifierAddModal = ({
 						value={selectedType}
 						onChange={value => {
 							setSelectedType(value as PublicationSource);
-							if (value !== 'unknown') setForceTypeChange(false);
+							if (value !== 'auto') setForceTypeChange(false);
 						}}
-						error={forceTypeChange && selectedType === 'unknown' ? 'Selection required' : false}
+						error={forceTypeChange && selectedType === 'auto' ? 'Selection required' : false}
 						w={150}
 					/>
 					<Button onClick={handleFetchPublication} loading={isFetching} disabled={!inputId?.trim()} w={100}>
-						Fetch
+						Search
 					</Button>
 				</Group>
 			</Modal>
