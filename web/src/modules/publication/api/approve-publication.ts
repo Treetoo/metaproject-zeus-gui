@@ -9,14 +9,14 @@ export type ApprovePublicationDto = {
 
 export const approvePublication = async (data: ApprovePublicationDto) => {
 	data.weight = data.weight ?? 1;
-	await request(`/publications/approval/${data.publicationId}/approve`, {
+	await request(`/publications/request/${data.publicationId}/approve`, {
 		method: Method.POST,
 		json: data
 	});
 };
 
 export const rejectPublication = async (data: ApprovePublicationDto) => {
-	await request(`/publications/approval/${data.publicationId}/reject`, {
+	await request(`/publications/request/${data.publicationId}/reject`, {
 		method: Method.POST,
 		json: data
 	});
@@ -24,14 +24,14 @@ export const rejectPublication = async (data: ApprovePublicationDto) => {
 
 export const approveCreditRequest = async (data: ApprovePublicationDto) => {
 	data.weight = data.weight ?? 1;
-	await request(`/publications/credit-approval/${data.publicationId}/approve`, {
+	await request(`/publications/credit/${data.publicationId}/approve`, {
 		method: Method.POST,
 		json: data
 	});
 };
 
 export const rejectCreditRequest = async (data: ApprovePublicationDto) => {
-	await request(`/publications/credit-approval/${data.publicationId}/reject`, {
+	await request(`/publications/credit/${data.publicationId}/reject`, {
 		method: Method.POST,
 		json: data
 	});

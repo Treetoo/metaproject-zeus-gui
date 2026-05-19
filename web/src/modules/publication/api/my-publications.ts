@@ -58,20 +58,13 @@ export const createMyPublication = async (data: CreateMyPublicationRequest) =>
 		json: data
 	});
 
-export const assignMyPublicationToProject = async (publicationId: number, projectId: number) =>
-	request(`/my/publications/${publicationId}/assign`, {
-		method: Method.POST,
-		json: { projectId }
-	});
-
 export const deleteMyPublication = async (publicationId: number) =>
 	request(`/my/publications/${publicationId}`, {
 		method: Method.DELETE
 	});
 
-export const getPublicationDetail = async (publicationId: number): Promise<PublicationDetail> => {
-	return request<PublicationDetail>(`/publications/approval/${publicationId}/detail`);
-};
+export const getPublicationDetail = async (publicationId: number): Promise<PublicationDetail> =>
+	request<PublicationDetail>(`/publications/request/${publicationId}/detail`);
 
 export const listMyCreditedPublications = async (
 	page: number,

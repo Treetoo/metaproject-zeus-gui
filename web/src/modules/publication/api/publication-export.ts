@@ -26,7 +26,7 @@ export const exportPublicationRequests = async (params: ExportPublicationsParams
 		searchParams.set('fields', params.fields.join(','));
 	}
 
-	return download(`/publications/approval/export?${searchParams}`, {
+	return download(`/publications/request/export?${searchParams}`, {
 		headers: {
 			Accept: 'text/csv'
 		}
@@ -51,7 +51,7 @@ export const exportCreditRequests = async (params: ExportPublicationsParams) => 
 		searchParams.set('fields', params.fields.join(','));
 	}
 
-	return download(`/publications/credit-approval/export?${searchParams}`, {
+	return download(`/publications/credit/export?${searchParams}`, {
 		headers: {
 			Accept: 'text/csv'
 		}

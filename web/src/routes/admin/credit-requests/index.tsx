@@ -11,8 +11,8 @@ import { getSortQuery } from '@/modules/api/sorting/utils';
 import { getCurrentRole } from '@/modules/auth/methods/getCurrentRole';
 import { Role } from '@/modules/user/role';
 import { PublicationsTable } from '@/components/publications/publication-table';
-import userManager from '@/modules/auth/config/user-manager';
 import { getPublicationDetail } from '@/modules/publication/api/my-publications';
+import { exportCreditRequests } from '@/modules/publication/api/publication-export';
 
 import { CreditRequestDetail } from './detail';
 
@@ -50,10 +50,12 @@ const CreditRequests = () => {
 		'year',
 		'uniqueId',
 		'status',
-		'createdAt',
-		'reviewedAt',
+		'requestedAt',
+		'updatedAt',
 		'weight',
-		'ownerId'
+		'requesterName',
+		'requesterLogin',
+		'requesterEmail'
 	]);
 	const [isExporting, setIsExporting] = useState(false);
 
@@ -92,36 +94,19 @@ const CreditRequests = () => {
 	const handleExport = async () => {
 		setIsExporting(true);
 		try {
-			const params = new URLSearchParams();
-			if (filter !== 'all') {
-				params.set('status', filter);
-			}
-			if (search?.trim()) {
-				params.set('search', search.trim());
-			}
-			if (startDate) {
-				params.set('startDate', startDate.toISOString());
-			}
-			if (endDate) {
-				params.set('endDate', endDate.toISOString());
-			}
-			if (selectedFields.length > 0 && selectedFields.length < 10) {
-				params.set('fields', selectedFields.join(','));
-			}
+			const statusParam = filter !== 'all' ? filter : undefined;
+			const searchParam = search?.trim() || undefined;
+			const startDateParam = startDate?.toISOString();
+			const endDateParam = endDate?.toISOString();
 
-			const user = await userManager.getUser();
-			const token = user?.access_token;
-
-			const response = await fetch(`/api/publications/credit-approval/export?${params}`, {
-				headers: {
-					Accept: 'text/csv',
-					...(token && { Authorization: `Bearer ${token}` })
-				}
+			const blob = await exportCreditRequests({
+				status: statusParam,
+				search: searchParam,
+				startDate: startDateParam,
+				endDate: endDateParam,
+				fields: selectedFields
 			});
 
-			if (!response.ok) throw new Error('Export failed');
-
-			const blob = await response.blob();
 			const url = window.URL.createObjectURL(blob);
 			const link = document.createElement('a');
 			link.href = url;

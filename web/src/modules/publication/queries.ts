@@ -41,7 +41,7 @@ export const usePublicationRequestsQuery = (
 			if (pagination.search && pagination.search.trim().length > 0) {
 				params.set('search', pagination.search.trim());
 			}
-			return request<PaginationResponse<Publication>>(`/publications/approval?${params}`);
+			return request<PaginationResponse<Publication>>(`/publications/request?${params}`);
 		}
 	});
 
@@ -72,7 +72,7 @@ export const useCreditRequestsQuery = (
 			if (pagination.search && pagination.search.trim().length > 0) {
 				params.set('search', pagination.search.trim());
 			}
-			return request<PaginationResponse<Publication>>(`/publications/credit-approval?${params}`);
+			return request<PaginationResponse<Publication>>(`/publications/credit?${params}`);
 		}
 	});
 

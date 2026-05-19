@@ -69,6 +69,7 @@ type PublicationsTableProps = {
 	isExporting?: boolean;
 	onExportConfirm?: () => void;
 	showCreditStatus?: boolean;
+	actionsColumnTitle?: string;
 };
 
 export const PublicationsTable: React.FC<PublicationsTableProps> = ({
@@ -80,6 +81,7 @@ export const PublicationsTable: React.FC<PublicationsTableProps> = ({
 	limit,
 	sortStatus,
 	showCreditStatus = false,
+	actionsColumnTitle = 'Actions',
 	onPageChange,
 	onRecordsPerPageChange,
 	onSortStatusChange,
@@ -221,19 +223,19 @@ export const PublicationsTable: React.FC<PublicationsTableProps> = ({
 						accessor: 'authors',
 						title: t('routes.PublicationRequests.table.authors'),
 						sortable: false,
-						width: 200
+						width: 280
 					},
 					{
 						accessor: 'journal',
 						title: t('routes.PublicationRequests.table.publisher'),
 						sortable: true,
-						width: 180
+						width: 240
 					},
 					{
 						accessor: 'year',
 						title: t('routes.PublicationRequests.table.publication_year'),
 						sortable: true,
-						width: 120
+						width: 80
 					},
 					{
 						accessor: 'status',
@@ -251,7 +253,7 @@ export const PublicationsTable: React.FC<PublicationsTableProps> = ({
 								{
 									accessor: 'creditStatus',
 									title: 'Credit Status',
-									width: 130,
+									width: 110,
 									sortable: false,
 									render: (pub: Publication) => {
 										const color =
@@ -269,8 +271,8 @@ export const PublicationsTable: React.FC<PublicationsTableProps> = ({
 						? [
 								{
 									accessor: 'actions',
-									title: '',
-									width: 280,
+									title: actionsColumnTitle,
+									width: 180,
 									textAlign: 'right',
 									render: renderActions
 								}

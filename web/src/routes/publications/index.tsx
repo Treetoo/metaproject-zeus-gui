@@ -301,16 +301,31 @@ const MyPublicationsPage = () => {
 							<Group gap={8} justify="flex-end">
 								<Button
 									size="xs"
-									variant="blue"
+									variant={pub.status === 'approved' ? 'default' : 'filled'}
 									disabled={pub.status === 'approved'}
-									onClick={() => {
+									styles={{
+										root: {
+											cursor: pub.status === 'approved' ? 'not-allowed' : 'pointer'
+										}
+									}}
+									onClick={e => {
+										e.stopPropagation();
+										if (pub.status === 'approved') return;
 										setEditingPublication(pub);
 										setActiveModal('manual');
 									}}
 								>
 									Edit
 								</Button>
-								<Button size="xs" color="red" variant="light" onClick={() => deletePublication(pub)}>
+								<Button
+									size="xs"
+									color="red"
+									variant="light"
+									onClick={e => {
+										e.stopPropagation();
+										deletePublication(pub);
+									}}
+								>
 									Delete
 								</Button>
 							</Group>
