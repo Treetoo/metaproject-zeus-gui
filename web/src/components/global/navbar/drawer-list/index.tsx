@@ -15,6 +15,8 @@ import {
 	IconReport,
 	IconUserUp,
 	IconArticle,
+	IconUserCheck,
+	IconWorld,
 } from '@tabler/icons-react';
 import React, { useEffect } from 'react';
 
@@ -101,7 +103,29 @@ const DrawerList = ({ open, onClose }: DrawerListProps) => {
 	const publicationsLink: LinkNode = {
 		title: 'components.global.drawerList.links.publications.title',
 		href: '/publications',
-		icon: <IconLibrary />
+		icon: <IconLibrary />,
+		links: [
+			{
+				title: 'components.global.drawerList.links.publications.my_publications',
+				href: '/publications?tab=my',
+				icon: <IconLibrary />
+			},
+			{
+				title: 'components.global.drawerList.links.publications.credited',
+				href: '/publications?tab=credited',
+				icon: <IconUserCheck />
+			},
+			{
+				title: 'components.global.drawerList.links.publications.stakeholder',
+				href: '/publications?tab=stakeholder',
+				icon: <IconWorld />
+			},
+			{
+				title: 'components.global.drawerList.links.publications.all_publications',
+				href: '/publications?tab=all',
+				icon: <IconArticle />
+			}
+		]
 	};
 
 	const adminLinks: LinkNode = {
@@ -140,6 +164,11 @@ const DrawerList = ({ open, onClose }: DrawerListProps) => {
 				icon: <IconArticle/>
 			},
 			{
+				title: 'components.global.drawerList.links.admin.link.credit_requests',
+				href: '/admin/credit-requests',
+				icon: <IconUserCheck />
+			},
+			{
 				title: 'components.global.drawerList.links.admin.link.stages',
 				href: '/admin/stages',
 				icon: <IconPodium />
@@ -176,6 +205,11 @@ const DrawerList = ({ open, onClose }: DrawerListProps) => {
 				title: 'components.global.drawerList.links.admin.link.publication_requests',
 				href: '/director/publication-requests',
 				icon: <IconArticle/>
+			},
+			{
+				title: 'components.global.drawerList.links.director.link.credit_requests',
+				href: '/director/credit-requests',
+				icon: <IconUserCheck />
 			},
 			{
 				title: 'components.global.drawerList.links.director.link.allocation_requests',

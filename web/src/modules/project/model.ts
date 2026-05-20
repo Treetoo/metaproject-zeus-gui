@@ -9,6 +9,7 @@ export type Project = {
 	status: string;
 	createdAt: string;
 	user: User;
+	isPersonal?: boolean;
 };
 
 export type FileDetail = {

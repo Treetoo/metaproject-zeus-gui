@@ -6,17 +6,17 @@ import { useQueryClient, useQuery } from '@tanstack/react-query';
 
 import PageBreadcrumbs from '@/components/global/page-breadcrumbs';
 import type { Publication, PublicationDetail } from '@/modules/publication/model';
-import { usePublicationRequestsQuery } from '@/modules/publication/queries';
+import { useCreditRequestsQuery } from '@/modules/publication/queries';
 import { getSortQuery } from '@/modules/api/sorting/utils';
 import { getCurrentRole } from '@/modules/auth/methods/getCurrentRole';
 import { Role } from '@/modules/user/role';
 import { PublicationsTable } from '@/components/publications/publication-table';
-import { exportPublicationRequests } from '@/modules/publication/api/publication-export';
 import { getPublicationDetail } from '@/modules/publication/api/my-publications';
+import { exportCreditRequests } from '@/modules/publication/api/publication-export';
 
-import { PublicationApprovalDetail } from './detail';
+import { CreditRequestDetail } from './detail';
 
-type PendingPublication = {
+type CreditRequest = {
 	status: 'pending' | 'approved' | 'rejected';
 	projectId: number;
 	projectName: string;
@@ -24,12 +24,12 @@ type PendingPublication = {
 
 type FilterType = 'all' | 'pending' | 'approved' | 'rejected';
 
-const PublicationRequests = () => {
+const CreditRequests = () => {
 	const { t } = useTranslation();
 	const role = getCurrentRole();
 	const prefix = role === Role.ADMIN ? '/admin' : '/director';
 
-	const [selectedPub, setSelectedPub] = useState<PendingPublication | null>(null);
+	const [selectedPub, setSelectedPub] = useState<CreditRequest | null>(null);
 	const [detailOpen, setDetailOpen] = useState(false);
 	const [page, setPage] = useState(1);
 	const [limit, setLimit] = useState(10);
@@ -48,19 +48,19 @@ const PublicationRequests = () => {
 		'authors',
 		'journal',
 		'year',
-		'uniqueId',
 		'status',
-		'createdAt',
-		'reviewedAt',
-		'weight',
-		'ownerId'
+		'requestedAt',
+		'updatedAt',
+		'requesterName',
+		'requesterLogin',
+		'requesterEmail'
 	]);
 	const [isExporting, setIsExporting] = useState(false);
 
 	const sortQuery = useMemo(() => getSortQuery(sortStatus.columnAccessor, sortStatus.direction), [sortStatus]);
 	const searchQuery = useMemo(() => ({ page, limit, search }), [page, limit, search]);
 
-	const handleRowClick = (publication: PendingPublication) => {
+	const handleRowClick = (publication: CreditRequest) => {
 		setSelectedPub(publication);
 		setDetailOpen(true);
 	};
@@ -75,7 +75,7 @@ const PublicationRequests = () => {
 	const handleActionComplete = async () => {
 		await refetch();
 		await queryClient.invalidateQueries({
-			queryKey: ['publications', 'requests']
+			queryKey: ['publications', 'credit-requests']
 		});
 	};
 
@@ -84,26 +84,31 @@ const PublicationRequests = () => {
 		setSelectedPub(null);
 	};
 
-	const { data, isPending, refetch } = usePublicationRequestsQuery(searchQuery, sortQuery, filter);
+	const { data, isPending, refetch } = useCreditRequestsQuery(searchQuery, sortQuery, filter);
 
-	const records = (data?.data ?? []) as PendingPublication[];
+	const records = (data?.data ?? []) as CreditRequest[];
 	const totalRecords = data?.metadata?.totalRecords ?? 0;
 
 	const handleExport = async () => {
 		setIsExporting(true);
 		try {
-			const blob = await exportPublicationRequests({
-				status: filter !== 'all' ? filter : undefined,
-				search: search?.trim(),
-				startDate: startDate?.toISOString(),
-				endDate: endDate?.toISOString(),
-				fields: selectedFields.length > 0 && selectedFields.length < 10 ? selectedFields : undefined
+			const statusParam = filter !== 'all' ? filter : undefined;
+			const searchParam = search?.trim() || undefined;
+			const startDateParam = startDate?.toISOString();
+			const endDateParam = endDate?.toISOString();
+
+			const blob = await exportCreditRequests({
+				status: statusParam,
+				search: searchParam,
+				startDate: startDateParam,
+				endDate: endDateParam,
+				fields: selectedFields
 			});
 
 			const url = window.URL.createObjectURL(blob);
 			const link = document.createElement('a');
 			link.href = url;
-			link.download = `publications-export-${new Date().toISOString().split('T')[0]}.csv`;
+			link.download = `credit-requests-export-${new Date().toISOString().split('T')[0]}.csv`;
 			document.body.appendChild(link);
 			link.click();
 			document.body.removeChild(link);
@@ -123,14 +128,14 @@ const PublicationRequests = () => {
 				links={[
 					{ title: t(`components.global.drawerList.links.${role}.title`), href: prefix },
 					{
-						title: t(`components.global.drawerList.links.${role}.link.publication_requests`),
-						href: `${prefix}/publication-requests`
+						title: 'Credit Requests',
+						href: `${prefix}/credit-requests`
 					}
 				]}
 			/>
 
 			<PublicationsTable
-				title={t('routes.PublicationRequests.title')}
+				title={t('routes.CreditRequests.title') || 'Credit Requests'}
 				records={records}
 				totalRecords={totalRecords}
 				isPending={isPending}
@@ -170,7 +175,7 @@ const PublicationRequests = () => {
 				onSelectedFieldsChange={setSelectedFields}
 				isExporting={isExporting}
 				onExportConfirm={handleExport}
-				exportType="publication-requests"
+				exportType="credit-requests"
 				renderActions={pub => (
 					<Button size="xs" variant="light" onClick={() => handleRowClick(pub)}>
 						Review
@@ -178,7 +183,7 @@ const PublicationRequests = () => {
 				)}
 			/>
 
-			<PublicationApprovalDetail
+			<CreditRequestDetail
 				opened={detailOpen}
 				onClose={handleCloseDetail}
 				publication={detailData || selectedPub}
@@ -189,4 +194,4 @@ const PublicationRequests = () => {
 	);
 };
 
-export default PublicationRequests;
+export default CreditRequests;

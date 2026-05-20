@@ -1,24 +1,14 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useEffect, useMemo, useState } from 'react';
 import { DataTable } from 'mantine-datatable';
-import { Modal, Button, Group, Stack, Select, Text, Autocomplete } from '@mantine/core';
+import { Modal, Button, Group, Autocomplete, Select, Text, Stack, Badge } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 
 import { type ResearcherIdType, type Publication } from '@/modules/publication/model';
-import { type CreateMyPublicationRequest } from '@/modules/publication/api/my-publications';
-import { createMyPublication } from '@/modules/publication/api/my-publications';
+import { type PublicationPreview } from '@/modules/publication/api/my-publications';
 import { searchByResearcherId } from '@/modules/publication/api/search-by-researcher-id';
-import { useMyActiveProjectsQuery } from '@/modules/project/queries';
 import { getMyOrcid } from '@/modules/user/api/my-orcid';
 
-const schema = z.object({
-	identifier: z.string(),
-	projectId: z.number({ required_error: 'Please select a project' }).min(1, 'Please select a project')
-});
-
-type FormValues = z.infer<typeof schema>;
+import { AddManuallyModal } from './add-manually-modal';
 
 type ResearcherIdentifierAddModalProps = {
 	opened: boolean;
@@ -33,26 +23,25 @@ type TypeOption = {
 const TYPE_OPTIONS: TypeOption[] = [
 	{ value: 'orcid', label: 'ORCID iD' },
 	{ value: 'res_openalex', label: 'OpenAlex researcher ID' },
-	{ value: 'unknown', label: 'Auto Detect' }
+	{ value: 'auto', label: 'Auto Detect' }
 ];
 
 export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: ResearcherIdentifierAddModalProps) => {
-	const { data: myProjects, isPending: isProjectsPending } = useMyActiveProjectsQuery();
-
-	const [selectedType, setSelectedType] = useState<ResearcherIdType>('unknown');
+	const [selectedType, setSelectedType] = useState<ResearcherIdType>('auto');
 	const [forceTypeChange, setForceTypeChange] = useState(false);
 	const [inputId, setInputId] = useState('');
 	const [myOrcids, setMyOrcids] = useState<string[]>([]);
 	const [works, setWorks] = useState<Publication[]>([]);
 	const [selectedWorks, setSelectedWorks] = useState<Publication[]>([]);
 	const [isSearching, setIsSearching] = useState(false);
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const form = useForm<FormValues>({
-		resolver: zodResolver(schema),
-		defaultValues: {
-			identifier: ''
-		}
-	});
+
+	// Sequential add mode states
+	const [isSequentialMode, setIsSequentialMode] = useState(false);
+	const [sequentialQueue, setSequentialQueue] = useState<Publication[]>([]);
+	const [currentWorkIndex, setCurrentWorkIndex] = useState(0);
+	const [fetchedPublication, setFetchedPublication] = useState<PublicationPreview | null>(null);
+	const [addedCount, setAddedCount] = useState(0);
+	const [skippedCount, setSkippedCount] = useState(0);
 
 	useEffect(() => {
 		if (opened) {
@@ -63,28 +52,33 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 				}
 			});
 		}
-
-		if (myProjects && myProjects.length === 1) {
-			form.setValue('projectId', Number(myProjects[0].id), { shouldValidate: true });
-		}
 	}, [opened]);
 
-	const projectOptions = useMemo(() => {
-		if (!myProjects || !Array.isArray(myProjects)) return [];
-		return myProjects.map(project => ({
-			value: String(project.id),
-			label: project.title
-		}));
-	}, [myProjects]);
+	useEffect(() => {
+		if (opened) {
+			setIsSequentialMode(false);
+			setSequentialQueue([]);
+			setCurrentWorkIndex(0);
+			setFetchedPublication(null);
+			setAddedCount(0);
+			setSkippedCount(0);
+		}
+	}, [opened]);
 
 	const orcidOptions = useMemo(() => myOrcids.map((orcid: string) => ({ value: orcid, label: orcid })), [myOrcids]);
 
 	const handleClose = () => {
-		form.reset();
+		setIsSearching(false);
 		setWorks([]);
 		setSelectedWorks([]);
-		setSelectedType('unknown');
+		setSelectedType('auto');
 		setForceTypeChange(false);
+		setIsSequentialMode(false);
+		setSequentialQueue([]);
+		setCurrentWorkIndex(0);
+		setFetchedPublication(null);
+		setAddedCount(0);
+		setSkippedCount(0);
 		onClose();
 	};
 
@@ -103,7 +97,7 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 			return;
 		}
 
-		if (forceTypeChange && selectedType === 'unknown') {
+		if (forceTypeChange && selectedType === 'auto') {
 			notifications.show({
 				message: 'Previous attempt failed. Please select a specific type from the dropdown or cancel.',
 				color: 'orange'
@@ -116,7 +110,7 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 			const result = await searchByResearcherId(trimmed, selectedType);
 			setWorks(result?.works ?? []);
 			if (!result?.works?.length) {
-				notifications.show({ message: 'No publications found for this ORCID', color: 'blue' });
+				notifications.show({ message: 'No publications found for this researcher ID', color: 'orange' });
 			}
 		} catch (e: any) {
 			const status = e?.status || e?.response?.status || e?.data?.status;
@@ -124,74 +118,118 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 			if (status === 400) {
 				setForceTypeChange(true);
 				notifications.show({
-					message: 'Could not detect publication type. Please select a publication type and try again',
+					message:
+						'Could not detect publication type automatically. Please select a type from the dropdown and try again.',
+					color: 'orange'
+				});
+			} else if (status === 404) {
+				notifications.show({
+					message: 'No publications found for this researcher ID. Please check the ID and try again.',
 					color: 'red'
 				});
 			} else {
-				notifications.show({ message: 'Unexpected error, please try again later', color: 'red' });
+				notifications.show({ message: 'An unexpected error occurred. Please try again later.', color: 'red' });
 			}
 		} finally {
 			setIsSearching(false);
 		}
 	};
 
-	const handleSubmitSelected = form.handleSubmit(async ({ projectId }) => {
+	const startSequentialAdd = async () => {
 		if (selectedWorks.length === 0) return;
 
 		const worksWithUniqueId = selectedWorks.filter((w: Publication) => w.uniqueId);
-
-		if (!projectId) {
-			notifications.show({ message: 'You need to select a project', color: 'yellow' });
-			return;
-		}
-
 		if (worksWithUniqueId.length === 0) {
 			notifications.show({ message: 'Selected publications have no ID', color: 'yellow' });
 			return;
 		}
 
-		if (worksWithUniqueId.length < selectedWorks.length) {
-			notifications.show({
-				message: `${selectedWorks.length - worksWithUniqueId.length} publication(s) skipped: no publication ID`,
-				color: 'yellow'
+		// Start sequential mode - use work data directly without fetching
+		setIsSequentialMode(true);
+		setSequentialQueue(worksWithUniqueId);
+		setCurrentWorkIndex(0);
+		setAddedCount(0);
+		setSkippedCount(0);
+
+		// Use the work data directly as fetchedPublication
+		const firstWork = worksWithUniqueId[0];
+		setFetchedPublication({
+			title: firstWork.title || '',
+			authors: firstWork.authors || '',
+			year: firstWork.year || 0,
+			journal: firstWork.journal || '',
+			url: firstWork.url || '',
+			uniqueId: firstWork.uniqueId,
+			source: firstWork.source || (selectedType as any)
+		});
+	};
+
+	const handlePublicationAdded = async () => {
+		setAddedCount(prev => prev + 1);
+
+		if (currentWorkIndex < sequentialQueue.length - 1) {
+			// Move to next work
+			const newIndex = currentWorkIndex + 1;
+			setCurrentWorkIndex(newIndex);
+			const nextWork = sequentialQueue[newIndex];
+
+			// Set the next publication directly without clearing first
+			setFetchedPublication({
+				title: nextWork.title || '',
+				authors: nextWork.authors || '',
+				year: nextWork.year || 0,
+				journal: nextWork.journal || '',
+				url: nextWork.url || '',
+				uniqueId: nextWork.uniqueId,
+				source: nextWork.source || (selectedType as any)
 			});
-		}
-
-		setIsSubmitting(true);
-		let successCount = 0;
-		let errorCount = 0;
-
-		for (const work of worksWithUniqueId) {
-			try {
-				const pubReq = { ...work, project: { projectId } } as CreateMyPublicationRequest;
-				await createMyPublication(pubReq);
-				successCount++;
-			} catch (e) {
-				errorCount++;
-			}
-		}
-
-		if (successCount > 0) {
+		} else {
+			// Done with all works
+			setFetchedPublication(null);
 			notifications.show({
-				message: `Added ${successCount} publication(s) from ORCID`,
+				message: `Added ${addedCount + 1} publication(s) from ORCID`,
 				color: 'green'
 			});
 			await onSuccess();
 			handleClose();
 		}
-		if (errorCount > 0) {
-			notifications.show({
-				message: `Failed to add ${errorCount} publication(s)`,
-				color: 'red'
+	};
+
+	const handlePublicationSkipped = async () => {
+		setSkippedCount(prev => prev + 1);
+
+		if (currentWorkIndex < sequentialQueue.length - 1) {
+			const newIndex = currentWorkIndex + 1;
+			setCurrentWorkIndex(newIndex);
+			const nextWork = sequentialQueue[newIndex];
+
+			// Set the next publication directly without clearing first
+			setFetchedPublication({
+				title: nextWork.title || '',
+				authors: nextWork.authors || '',
+				year: nextWork.year || 0,
+				journal: nextWork.journal || '',
+				url: nextWork.url || '',
+				uniqueId: nextWork.uniqueId,
+				source: nextWork.source || (selectedType as any)
 			});
+		} else {
+			setFetchedPublication(null);
+			notifications.show({
+				message: `Finished. Added ${addedCount} publication(s), skipped ${skippedCount + 1}`,
+				color: 'blue'
+			});
+			await onSuccess();
+			handleClose();
 		}
-		setIsSubmitting(false);
-		handleClose();
-	});
+	};
+
+	const currentWork = isSequentialMode ? sequentialQueue[currentWorkIndex] : null;
+	const progressText = isSequentialMode ? `Processing ${currentWorkIndex + 1} of ${sequentialQueue.length}` : '';
 
 	return (
-		<Modal opened={opened} onClose={handleClose} title="Add publications by researcher ID" centered size="xxl">
-			<form onSubmit={handleSubmitSelected}>
+		<>
+			<Modal opened={opened} onClose={handleClose} title="Add publications by researcher ID" centered size="xxl">
 				<Stack>
 					<Group align="flex-end">
 						<Autocomplete
@@ -212,9 +250,9 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 							value={selectedType}
 							onChange={value => {
 								setSelectedType(value as ResearcherIdType);
-								if (value !== 'unknown') setForceTypeChange(false);
+								if (value !== 'auto') setForceTypeChange(false);
 							}}
-							error={forceTypeChange && selectedType === 'unknown' ? 'Selection required' : false}
+							error={forceTypeChange && selectedType === 'auto' ? 'Selection required' : false}
 						/>
 
 						<Button onClick={handleSearchId} loading={isSearching} disabled={!inputId.trim()}>
@@ -222,26 +260,7 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 						</Button>
 					</Group>
 
-					<Controller
-						name="projectId"
-						control={form.control}
-						render={({ field, fieldState }) => (
-							<Select
-								label="Select project"
-								placeholder={isProjectsPending ? 'Loading projects...' : 'Choose a project'}
-								data={projectOptions}
-								value={field.value ? String(field.value) : null}
-								onChange={val => field.onChange(val ? Number(val) : undefined)}
-								error={fieldState.error?.message}
-								required
-								searchable
-								nothingFoundMessage="No projects found"
-								description="Only active projects you are a member of are shown"
-							/>
-						)}
-					/>
-
-					{works.length > 0 && (
+					{works.length > 0 && !isSequentialMode && (
 						<>
 							<Text size="sm" c="dimmed">
 								Found {works.length} publication(s). Select the ones you want to add:
@@ -266,19 +285,40 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 								<Button variant="default" onClick={handleClose}>
 									Cancel
 								</Button>
-								<Text />
-								<Button
-									onClick={handleSubmitSelected}
-									loading={isSubmitting}
-									disabled={selectedWorks.length === 0}
-								>
+								{selectedWorks.length > 0 && <Badge size="lg">{selectedWorks.length} selected</Badge>}
+								<Button onClick={startSequentialAdd} disabled={selectedWorks.length === 0}>
 									Add {selectedWorks.length} selected
 								</Button>
 							</Group>
 						</>
 					)}
+
+					{isSequentialMode && currentWork && (
+						<Text size="sm" c="blue">
+							{progressText}
+						</Text>
+					)}
 				</Stack>
-			</form>
-		</Modal>
+			</Modal>
+
+			{isSequentialMode && fetchedPublication && (
+				<AddManuallyModal
+					opened
+					onClose={() => { }}
+					onSuccess={handlePublicationAdded}
+					fetchedPublication={fetchedPublication}
+					sourceType={selectedType as any}
+					allowSkip
+					onSkip={handlePublicationSkipped}
+					onCancelSequential={() => {
+						setIsSequentialMode(false);
+						setFetchedPublication(null);
+						setSequentialQueue([]);
+						setCurrentWorkIndex(0);
+						handleClose();
+					}}
+				/>
+			)}
+		</>
 	);
 };

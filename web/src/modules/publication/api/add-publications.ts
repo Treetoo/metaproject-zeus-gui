@@ -7,6 +7,9 @@ export type AddPublicationRequest = {
 	publications: Publication[];
 };
 
+/**
+ * Adds multiple publications to a project.
+ */
 export const addPublications = async ({ projectId, publications }: AddPublicationRequest) => {
 	const payload = publications.map(publication => ({
 		title: publication.title,

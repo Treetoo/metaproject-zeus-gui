@@ -18,13 +18,12 @@ import { type Publication } from '@/modules/publication/model';
 import {
 	manualPublicationSchema,
 	type ManualPublicationSchema,
-	searchByPubIdSchema as searchByPubIdSchema,
-	type SearchByPubIdSchema as SearchByPubIdSchema
+	searchByPubIdSchema,
+	type SearchByPubIdSchema
 } from '@/modules/publication/form';
-import { createMyPublicationById } from '@/modules/publication/api/my-publications';
 import PublicationCard from '@/components/project/publications/publication-card';
 import { useAddPublicationsMutation } from '@/modules/publication/mutations';
-import { useAssignMyPublicationMutation, useMyPublicationsQuery } from '@/modules/publication/my-queries';
+import { useMyPublicationsQuery } from '@/modules/publication/my-queries';
 import { PUBLICATION_PAGE_SIZES } from '@/modules/publication/constants';
 import { getSortQuery } from '@/modules/api/sorting/utils';
 
@@ -48,7 +47,6 @@ const ProjectPublicationsAddPage = () => {
 	});
 
 	const { mutate, isPending } = useAddPublicationsMutation();
-	const assignMutation = useAssignMyPublicationMutation();
 
 	// state for "My publications" modal
 	const [isMyModalOpen, setIsMyModalOpen] = useState(false);
@@ -58,10 +56,7 @@ const ProjectPublicationsAddPage = () => {
 		columnAccessor: 'id',
 		direction: 'asc'
 	});
-	const mySortQuery = useMemo(
-		() => getSortQuery(mySort.columnAccessor, mySort.direction),
-		[mySort]
-	);
+	const mySortQuery = useMemo(() => getSortQuery(mySort.columnAccessor, mySort.direction), [mySort]);
 	const {
 		data: myResponse,
 		isPending: isMyLoading,
@@ -165,8 +160,9 @@ const ProjectPublicationsAddPage = () => {
 
 	const assignSelectedFromMy = async () => {
 		if (!selectedMy.length) return;
-		const assignable = selectedMy.filter((publication: Publication): publication is Publication & { id: number } =>
-			typeof publication.id === 'number'
+		const assignable = selectedMy.filter(
+			(publication: Publication): publication is Publication & { id: number } =>
+				typeof publication.id === 'number'
 		);
 		if (!assignable.length) return;
 		try {
@@ -175,7 +171,9 @@ const ProjectPublicationsAddPage = () => {
 					assignMutation.mutateAsync({ id: publication.id, projectId: project.id })
 				)
 			);
-			notifications.show({ message: t('routes.ProjectPublicationsAddPage.my.assign_success', { count: assignable.length }) });
+			notifications.show({
+				message: t('routes.ProjectPublicationsAddPage.my.assign_success', { count: assignable.length })
+			});
 			await refetchMy();
 			await queryClient.invalidateQueries({ queryKey: ['project', project.id, 'publications'] });
 			closeAddFromMy();
@@ -242,11 +240,7 @@ const ProjectPublicationsAddPage = () => {
 				{t('routes.ProjectPublicationsAddPage.title')}
 			</Title>
 			<Stack mt={20}>
-				<Button
-					onClick={() => setIsPubIdModalOpen(true)}
-					color="blue"
-					fullWidth
-				>
+				<Button onClick={() => setIsPubIdModalOpen(true)} color="blue" fullWidth>
 					Add by publication ID
 				</Button>
 				<Divider label="or" />
@@ -274,9 +268,7 @@ const ProjectPublicationsAddPage = () => {
 							{
 								accessor: 'title',
 								title: t('components.project.publications.index.columns.publication_info'),
-								render: (publication: Publication) => (
-									<PublicationCard publication={publication} />
-								)
+								render: (publication: Publication) => <PublicationCard publication={publication} />
 							},
 							{
 								accessor: 'year',
@@ -286,7 +278,7 @@ const ProjectPublicationsAddPage = () => {
 							{
 								accessor: 'status',
 								// TODO: add translation
-								title: "Status",
+								title: 'Status',
 								width: 150
 							},
 							{
@@ -311,15 +303,23 @@ const ProjectPublicationsAddPage = () => {
 					/>
 					<Button onClick={addPublications} color="teal" fullWidth mt={10} loading={isPending}>
 						{publications.length === 1
-							? t('routes.ProjectPublicationsAddPage.add_button_one', { count: 1, defaultValue: 'Add publication to project' })
-							: t('routes.ProjectPublicationsAddPage.add_button_other', { count: publications.length, defaultValue: 'Add publications to project' })}
+							? t('routes.ProjectPublicationsAddPage.add_button_one', {
+								count: 1,
+								defaultValue: 'Add publication to project'
+							})
+							: t('routes.ProjectPublicationsAddPage.add_button_other', {
+								count: publications.length,
+								defaultValue: 'Add publications to project'
+							})}
 					</Button>
 				</Box>
 			)}
 
 			{isMyModalOpen && (
 				<Box py={30}>
-					<Title order={4}>{t('routes.ProjectPublicationsAddPage.my.title', { defaultValue: 'My publications' })}</Title>
+					<Title order={4}>
+						{t('routes.ProjectPublicationsAddPage.my.title', { defaultValue: 'My publications' })}
+					</Title>
 					<DataTable
 						height={500}
 						withTableBorder
@@ -345,14 +345,25 @@ const ProjectPublicationsAddPage = () => {
 							await refetchMy();
 						}}
 						columns={[
-							{ accessor: 'title', title: t('components.project.publications.index.columns.publication_info') },
-							{ accessor: 'year', title: t('components.project.publications.index.columns.year'), width: 150 }
+							{
+								accessor: 'title',
+								title: t('components.project.publications.index.columns.publication_info')
+							},
+							{
+								accessor: 'year',
+								title: t('components.project.publications.index.columns.year'),
+								width: 150
+							}
 						]}
 					/>
 					<Group mt={10} justify="flex-end">
-						<Button variant="default" onClick={closeAddFromMy}>{t('common.cancel', { defaultValue: 'Cancel' })}</Button>
+						<Button variant="default" onClick={closeAddFromMy}>
+							{t('common.cancel', { defaultValue: 'Cancel' })}
+						</Button>
 						<Button color="teal" onClick={assignSelectedFromMy} loading={assignMutation.isPending}>
-							{t('routes.ProjectPublicationsAddPage.my.assign_selected', { defaultValue: 'Assign selected' })}
+							{t('routes.ProjectPublicationsAddPage.my.assign_selected', {
+								defaultValue: 'Assign selected'
+							})}
 						</Button>
 					</Group>
 				</Box>
