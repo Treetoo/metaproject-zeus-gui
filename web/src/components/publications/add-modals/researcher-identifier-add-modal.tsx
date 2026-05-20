@@ -27,7 +27,7 @@ const TYPE_OPTIONS: TypeOption[] = [
 ];
 
 export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: ResearcherIdentifierAddModalProps) => {
-	const [selectedType, setSelectedType] = useState<ResearcherIdType>('unknown');
+	const [selectedType, setSelectedType] = useState<ResearcherIdType>('auto');
 	const [forceTypeChange, setForceTypeChange] = useState(false);
 	const [inputId, setInputId] = useState('');
 	const [myOrcids, setMyOrcids] = useState<string[]>([]);
@@ -71,7 +71,7 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 		setIsSearching(false);
 		setWorks([]);
 		setSelectedWorks([]);
-		setSelectedType('unknown');
+		setSelectedType('auto');
 		setForceTypeChange(false);
 		setIsSequentialMode(false);
 		setSequentialQueue([]);
@@ -97,7 +97,7 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 			return;
 		}
 
-		if (forceTypeChange && selectedType === 'unknown') {
+		if (forceTypeChange && selectedType === 'auto') {
 			notifications.show({
 				message: 'Previous attempt failed. Please select a specific type from the dropdown or cancel.',
 				color: 'orange'
@@ -250,9 +250,9 @@ export const ResearcherIdentifierAddModal = ({ opened, onClose, onSuccess }: Res
 							value={selectedType}
 							onChange={value => {
 								setSelectedType(value as ResearcherIdType);
-								if (value !== 'unknown') setForceTypeChange(false);
+								if (value !== 'auto') setForceTypeChange(false);
 							}}
-							error={forceTypeChange && selectedType === 'unknown' ? 'Selection required' : false}
+							error={forceTypeChange && selectedType === 'auto' ? 'Selection required' : false}
 						/>
 
 						<Button onClick={handleSearchId} loading={isSearching} disabled={!inputId.trim()}>
