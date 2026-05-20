@@ -5,6 +5,9 @@ import { type Publication } from '@/modules/publication/model';
 import { request } from '@/modules/api/request';
 import type { PublicationWithCreditStatus } from './api/my-publications';
 
+/**
+ * Query hook for fetching publications associated with a specific project.
+ */
 export const useProjectPublicationsQuery = (id: number, pagination: Pagination, sortSelector: string) =>
 	useQuery({
 		queryKey: ['project', id, 'publications', pagination.page, pagination.limit, sortSelector],
@@ -14,6 +17,9 @@ export const useProjectPublicationsQuery = (id: number, pagination: Pagination, 
 			)
 	});
 
+/**
+ * Query hook for fetching publication requests (publications pending approval).
+ */
 export const usePublicationRequestsQuery = (
 	pagination: Pagination,
 	sortSelector: string,
@@ -45,6 +51,9 @@ export const usePublicationRequestsQuery = (
 		}
 	});
 
+/**
+ * Query hook for fetching credit requests for publications.
+ */
 export const useCreditRequestsQuery = (
 	pagination: Pagination,
 	sortSelector: string,
@@ -76,6 +85,9 @@ export const useCreditRequestsQuery = (
 		}
 	});
 
+/**
+ * Query hook for fetching all publications with credit status information.
+ */
 export const useAllPublicationsWithCreditQuery = (
 	pagination: Pagination,
 	sortSelector: string,

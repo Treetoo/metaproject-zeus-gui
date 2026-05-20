@@ -115,6 +115,8 @@ export const StakeholderSelectionModal = ({
 
 	const handleRemoveUser = (userId: number) => {
 		setSelectedUsers(selectedUsers.filter((u) => u.id !== userId));
+		setSearchQuery('');
+		setUserOptions([]);
 	};
 
 	const handleFairShareChange = (userId: number, checked: boolean) => {
@@ -149,11 +151,11 @@ export const StakeholderSelectionModal = ({
 			<Stack gap="lg">
 				<Text size="sm" c="dimmed">
 					{description ||
-						'This is a personal project. Select users who should be added as stakeholders to this publication.'}
+						'This is a personal project. Select users to add as authors to this publication.'}
 				</Text>
 				<Alert icon={<IconInfoCircle />} color="orange" title="Important">
-					This is your only chance to add stakeholders. Once the publication is created, you cannot add
-					stakeholders later. Being in the table means you are an author of this publication.
+					You can add more authors later, but they will not be eligible for fair share. Only authors
+					added now can be marked as fair share eligible. Being in the table means you are an author of this publication.
 				</Alert>
 
 				<Text size="sm" fw={500}>
@@ -209,6 +211,7 @@ export const StakeholderSelectionModal = ({
 					onChange={handleUserSelect}
 					searchValue={searchQuery}
 					onSearchChange={setSearchQuery}
+					value={null}
 					searchable
 					maxDropdownHeight={250}
 					nothingFoundMessage="No users found"

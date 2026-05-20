@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Modal, Button, Group, TextInput, Select, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 
-import { getMyPublicationById } from '@/modules/publication/api/my-publications';
 import { type PublicationSource, type Publication } from '@/modules/publication/model';
 import { searchByPubId } from '@/modules/publication/api/search-by-publication-id';
 
@@ -112,7 +111,7 @@ export const IdentifierAddModal = ({
 	return (
 		<>
 			<Modal opened={opened} onClose={handleClose} title={title} centered size="lg">
-				<Group align="flex-start" grow>
+				<Group align="flex-end" grow>
 					<TextInput
 						label={label}
 						placeholder={placeholder}

@@ -48,11 +48,9 @@ const CreditRequests = () => {
 		'authors',
 		'journal',
 		'year',
-		'uniqueId',
 		'status',
 		'requestedAt',
 		'updatedAt',
-		'weight',
 		'requesterName',
 		'requesterLogin',
 		'requesterEmail'
@@ -177,6 +175,7 @@ const CreditRequests = () => {
 				onSelectedFieldsChange={setSelectedFields}
 				isExporting={isExporting}
 				onExportConfirm={handleExport}
+				exportType="credit-requests"
 				renderActions={pub => (
 					<Button size="xs" variant="light" onClick={() => handleRowClick(pub)}>
 						Review

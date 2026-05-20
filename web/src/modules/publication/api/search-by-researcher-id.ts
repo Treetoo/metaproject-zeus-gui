@@ -8,6 +8,10 @@ export type OrcidWorksListDto = {
 	works: Publication[];
 };
 
+/**
+ * Searches for publications using a researcher identifier (ORCID, OpenAlex ID, etc.).
+ * Returns null if no results found (404), throws otherwise.
+ */
 export const searchByResearcherId = async (id: string, type: ResearcherIdType) => {
 	try {
 		return request<OrcidWorksListDto>(`/publication-search/researcher-id/${encodeURIComponent(id)}/${encodeURIComponent(type)}`);

@@ -170,6 +170,7 @@ const PublicationRequests = () => {
 				onSelectedFieldsChange={setSelectedFields}
 				isExporting={isExporting}
 				onExportConfirm={handleExport}
+				exportType="publication-requests"
 				renderActions={pub => (
 					<Button size="xs" variant="light" onClick={() => handleRowClick(pub)}>
 						Review

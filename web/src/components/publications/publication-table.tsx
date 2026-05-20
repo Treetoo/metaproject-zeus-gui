@@ -24,8 +24,9 @@ import { PUBLICATION_PAGE_SIZES } from '@/modules/publication/constants';
 import type { Publication } from '@/modules/publication/model';
 
 type FilterType = 'all' | 'pending' | 'approved' | 'rejected';
+type ExportType = 'publication-requests' | 'credit-requests';
 
-const AVAILABLE_FIELDS = [
+const PUBLICATION_REQUEST_FIELDS = [
 	{ value: 'title', label: 'Title' },
 	{ value: 'authors', label: 'Authors' },
 	{ value: 'journal', label: 'Journal' },
@@ -36,6 +37,19 @@ const AVAILABLE_FIELDS = [
 	{ value: 'reviewedAt', label: 'Reviewed At' },
 	{ value: 'weight', label: 'Weight' },
 	{ value: 'ownerId', label: 'Owner ID' }
+];
+
+const CREDIT_REQUEST_FIELDS = [
+	{ value: 'title', label: 'Title' },
+	{ value: 'authors', label: 'Authors' },
+	{ value: 'journal', label: 'Journal' },
+	{ value: 'year', label: 'Year' },
+	{ value: 'status', label: 'Status' },
+	{ value: 'requestedAt', label: 'Requested At' },
+	{ value: 'updatedAt', label: 'Updated At' },
+	{ value: 'requesterName', label: 'Requester Name' },
+	{ value: 'requesterLogin', label: 'Requester Login' },
+	{ value: 'requesterEmail', label: 'Requester Email' }
 ];
 
 type PublicationsTableProps = {
@@ -70,6 +84,7 @@ type PublicationsTableProps = {
 	onExportConfirm?: () => void;
 	showCreditStatus?: boolean;
 	actionsColumnTitle?: string;
+	exportType?: ExportType;
 };
 
 export const PublicationsTable: React.FC<PublicationsTableProps> = ({
@@ -82,6 +97,7 @@ export const PublicationsTable: React.FC<PublicationsTableProps> = ({
 	sortStatus,
 	showCreditStatus = false,
 	actionsColumnTitle = 'Actions',
+	exportType = 'publication-requests',
 	onPageChange,
 	onRecordsPerPageChange,
 	onSortStatusChange,
@@ -106,6 +122,8 @@ export const PublicationsTable: React.FC<PublicationsTableProps> = ({
 	onExportConfirm
 }) => {
 	const { t } = useTranslation();
+
+	const availableFields = exportType === 'credit-requests' ? CREDIT_REQUEST_FIELDS : PUBLICATION_REQUEST_FIELDS;
 
 	return (
 		<Box mt={15}>
@@ -235,7 +253,7 @@ export const PublicationsTable: React.FC<PublicationsTableProps> = ({
 						accessor: 'year',
 						title: t('routes.PublicationRequests.table.publication_year'),
 						sortable: true,
-						width: 80
+						width: 150
 					},
 					{
 						accessor: 'status',
@@ -317,7 +335,7 @@ export const PublicationsTable: React.FC<PublicationsTableProps> = ({
 								onChange={values => onSelectedFieldsChange?.(values as string[])}
 							>
 								<Stack gap={8}>
-									{AVAILABLE_FIELDS.map(field => (
+									{availableFields.map(field => (
 										<Checkbox key={field.value} value={field.value} label={field.label} />
 									))}
 								</Stack>

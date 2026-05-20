@@ -8,6 +8,9 @@ export type ExportPublicationsParams = {
 	fields?: string[];
 };
 
+/**
+ * Exports publication requests as a CSV file with optional filtering by status, search, date range, and fields.
+ */
 export const exportPublicationRequests = async (params: ExportPublicationsParams) => {
 	const searchParams = new URLSearchParams();
 	if (params.status && params.status !== 'all') {
@@ -33,6 +36,9 @@ export const exportPublicationRequests = async (params: ExportPublicationsParams
 	});
 };
 
+/**
+ * Exports credit requests as a CSV file with optional filtering by status, search, date range, and fields.
+ */
 export const exportCreditRequests = async (params: ExportPublicationsParams) => {
 	const searchParams = new URLSearchParams();
 	if (params.status && params.status !== 'all') {
